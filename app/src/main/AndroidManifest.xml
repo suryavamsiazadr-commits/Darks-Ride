@@ -23,6 +23,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Test page for the LG Wing's second screen -->
+        <activity
+            android:name=".SecondScreenActivity"
+            android:exported="false"
+            android:resizeableActivity="true"
+            android:taskAffinity="com.darksoul.darksride.second"
+            android:theme="@style/Theme.DarksRide" />
     </application>
 
 </manifest>
