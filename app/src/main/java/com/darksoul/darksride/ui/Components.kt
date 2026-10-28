@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -33,12 +35,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import kotlin.random.Random
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import com.darksoul.darksride.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darksoul.darksride.AppMode
@@ -60,6 +68,7 @@ fun RideColumn(
             .background(
                 Brush.verticalGradient(listOf(LocalGlass.current.backgroundTop, LocalGlass.current.backgroundBottom))
             )
+            .starfield(LocalGlass.current.isDark)
             .windowInsetsPadding(insets)
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
@@ -68,18 +77,74 @@ fun RideColumn(
     )
 }
 
+/** A faint field of tiny stars behind the dark theme: there if you look, never in the way. */
+private class Star(val x: Float, val y: Float, val radiusDp: Float, val alpha: Float)
+
+private val STARS: List<Star> = Random(450).let { r ->
+    List(150) {
+        val bright = r.nextFloat() < 0.06f
+        Star(
+            x = r.nextFloat(),
+            y = r.nextFloat(),
+            radiusDp = if (bright) 1.1f + r.nextFloat() * 0.5f else 0.45f + r.nextFloat() * 0.5f,
+            alpha = if (bright) 0.32f + r.nextFloat() * 0.15f else 0.08f + r.nextFloat() * 0.16f
+        )
+    }
+}
+
+internal fun Modifier.starfield(enabled: Boolean): Modifier =
+    if (!enabled) this else drawBehind {
+        STARS.forEach { s ->
+            drawCircle(
+                color = Color.White.copy(alpha = s.alpha),
+                radius = s.radiusDp * density,
+                center = Offset(s.x * size.width, s.y * size.height)
+            )
+        }
+    }
+
 /** Screen title with the connection status in a small box beside it. */
 @Composable
-internal fun Header(title: String, status: LinkStatus?, peer: String?, mode: AppMode) {
+internal fun Header(
+    title: String,
+    status: LinkStatus?,
+    peer: String?,
+    mode: AppMode,
+    onSettings: (() -> Unit)? = null
+) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
-            title, fontSize = 28.sp, fontWeight = FontWeight.Bold,
+            title, fontSize = 26.sp, fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
             maxLines = 1, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
         if (status != null) StatusPill(status, peer, mode)
+        if (onSettings != null) {
+            IconButton(onClick = onSettings) {
+                Icon(
+                    painterResource(R.drawable.ic_settings), contentDescription = "Settings",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                )
+            }
+        }
     }
+}
+
+/** App name and version, small and quiet. */
+@Composable
+internal fun VersionLabel(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val version = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
+            .getOrNull() ?: ""
+    }
+    Text(
+        "Dark's Ride v$version", fontSize = 12.sp,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+        textAlign = TextAlign.Center,
+        modifier = modifier.fillMaxWidth()
+    )
 }
 
 @Composable

@@ -52,7 +52,7 @@ object RideOverlay {
     // Palette (matches the app theme)
     // Card colours follow the app's light / dark theme (light sensor in Auto).
     private val dark: Boolean get() = ThemeController.isDark.value
-    private val SURFACE: Int get() = if (dark) 0xF01C1F2B.toInt() else 0xF7FFFFFF.toInt()
+    private val SURFACE: Int get() = if (dark) 0xF20A0A0A.toInt() else 0xF7FFFFFF.toInt()
     private val TEXT: Int get() = if (dark) 0xFFFFFFFF.toInt() else 0xFF15161A.toInt()
     private val SUBTLE: Int get() = if (dark) 0xB3FFFFFF.toInt() else 0x9915161A.toInt()
     private val EMBER = 0xFFFF7A1A.toInt()

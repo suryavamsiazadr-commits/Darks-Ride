@@ -1,24 +1,27 @@
 package com.darksoul.darksride
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.fragment.app.FragmentActivity
 import com.darksoul.darksride.link.LinkService
 import com.darksoul.darksride.link.LinkState
 import com.darksoul.darksride.phone.PhoneListenerService
 import com.darksoul.darksride.ui.LinkScreen
 import com.darksoul.darksride.ui.MainShell
 import com.darksoul.darksride.ui.ModeChoiceScreen
+import com.darksoul.darksride.ui.SettingsScreen
 import com.darksoul.darksride.ui.theme.DarksRideTheme
 
-class MainActivity : ComponentActivity() {
+/** FragmentActivity (a ComponentActivity) because the fingerprint prompt needs it. */
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Ride mode decides what runs in the background; opening the app doesn't change it.
@@ -43,11 +46,13 @@ class MainActivity : ComponentActivity() {
 fun AppRoot() {
     val context = LocalContext.current
     var mode by remember { mutableStateOf(AppPrefs.mode(context)) }
+    var rideSettings by rememberSaveable { mutableStateOf(false) }
 
     val changeRole = {
         LinkService.stop(context)
         LinkState.clear()
         AppPrefs.setMode(context, null)
+        rideSettings = false
         mode = null
     }
 
@@ -58,6 +63,11 @@ fun AppRoot() {
             mode = picked
         })
         AppMode.MAIN -> MainShell(onChangeRole = changeRole)
-        AppMode.RIDE -> LinkScreen(mode = AppMode.RIDE, onChangeRole = changeRole)
+        AppMode.RIDE ->
+            if (rideSettings) {
+                SettingsScreen(mode = AppMode.RIDE, onChangeRole = changeRole, onBack = { rideSettings = false })
+            } else {
+                LinkScreen(mode = AppMode.RIDE, onOpenSettings = { rideSettings = true })
+            }
     }
 }

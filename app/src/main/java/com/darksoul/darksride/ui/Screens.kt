@@ -59,16 +59,16 @@ fun ModeChoiceScreen(onPick: (AppMode) -> Unit) {
         Title("Welcome to Dark's Ride")
         Body("What is this phone for?")
         Card(onClick = { onPick(AppMode.MAIN) }) {
-            Text("Main phone", fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
+            Text(RoleNames.MAIN, fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary)
-            Text("The phone with your SIM card. It stays in your pocket and sends " +
-                "music, calls and notifications to the bike.",
+            Text("Your main phone, the one with the SIM. It rides in your pocket and carries " +
+                "music, calls and messages up to the bike.",
                 fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
         }
         Card(onClick = { onPick(AppMode.RIDE) }) {
-            Text("Ride screen", fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
+            Text(RoleNames.RIDE, fontSize = 22.sp, fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary)
-            Text("The phone mounted on the bike. It shows maps, music controls and alerts.",
+            Text("The phone mounted on the bike: maps, music controls, calls and alerts.",
                 fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
         }
         Body("You can change this later.", dim = true)
@@ -80,7 +80,7 @@ fun ModeChoiceScreen(onPick: (AppMode) -> Unit) {
 @Composable
 fun LinkScreen(
     mode: AppMode,
-    onChangeRole: () -> Unit,
+    onOpenSettings: (() -> Unit)? = null,
     insets: WindowInsets = WindowInsets.safeDrawing
 ) {
     val context = LocalContext.current
@@ -114,12 +114,12 @@ fun LinkScreen(
 
     RideColumn(insets = insets) {
         Header(
-            title = if (mode == AppMode.MAIN) "Main phone" else "Ride screen",
+            title = RoleNames.of(mode),
             status = if (ready) status else null,
             peer = peer,
-            mode = mode
+            mode = mode,
+            onSettings = onOpenSettings
         )
-        Body("Dark's Ride · version 1", dim = true)
 
         when {
             adapter == null -> Body("This phone has no Bluetooth, so it cannot be used.")
@@ -156,29 +156,25 @@ fun LinkScreen(
 
             else -> {
                 RideModeCard(mode = mode, on = rideOn)
-                SetupCard(mode)
+                // Setup lives in Settings; it only shows here while something is missing.
+                SetupCard(mode, hideWhenComplete = true)
 
                 if (mode == AppMode.RIDE) {
                     if (status == LinkStatus.CONNECTED) RideContent()
-                    SmallScreenCard()
+                    else if (rideOn) Body("Waiting for your Pocket Sherpa…", dim = true)
                 } else {
-                    NotificationFilterCard()
+                    if (rideOn && status == LinkStatus.STOPPED) {
+                        BigButton("Start link", onClick = { LinkService.turnOn(context) })
+                    }
+                    Card {
+                        Text("Plan a ride", fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface)
+                        Body("In Google Maps, find a place and tap Share → Send to bike. " +
+                            "Handlebar HQ starts navigating.", dim = true)
+                    }
                 }
-
-                LinkCard(
-                    mode = mode,
-                    status = status,
-                    rideName = rideName,
-                    rideOn = rideOn,
-                    onChangeRidePhone = { picking = true },
-                    onStart = { LinkService.turnOn(context) }
-                )
-                AppearanceCard()
-                ActivityCard()
             }
         }
-
-        TextButton(onClick = onChangeRole) { Text("Change this phone's role") }
     }
 }
 
@@ -213,18 +209,17 @@ private fun RideModeCard(mode: AppMode, on: Boolean) {
     }
 }
 
-/** Link details and controls, closed by default. */
+/** Link details and controls, closed by default (Settings). */
 @Composable
-private fun LinkCard(
-    mode: AppMode,
-    status: LinkStatus,
-    rideName: String?,
-    rideOn: Boolean,
-    onChangeRidePhone: () -> Unit,
-    onStart: () -> Unit
-) {
+internal fun LinkCard(mode: AppMode) {
     val context = LocalContext.current
+    val adapter = remember { context.getSystemService(BluetoothManager::class.java)?.adapter }
+    val status by LinkState.status.collectAsState()
+    val rideOn by AppPrefs.rideMode(context).collectAsState()
     val reconnects by LinkState.reconnects.collectAsState()
+    var rideName by remember { mutableStateOf(AppPrefs.rideName(context)) }
+    var picking by remember { mutableStateOf(false) }
+    val onStart = { LinkService.turnOn(context) }
     CollapsibleCard(
         title = "Link",
         stateKey = "link",
@@ -234,9 +229,22 @@ private fun LinkCard(
     ) {
         if (mode == AppMode.MAIN) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Ride phone: ${rideName ?: "not set"}", fontSize = 16.sp,
+                Text("Bike phone: ${rideName ?: "not set"}", fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
-                TextButton(onClick = onChangeRidePhone) { Text("Change") }
+                TextButton(onClick = { picking = !picking }) { Text(if (picking) "Cancel" else "Change") }
+            }
+            if (picking && adapter != null) {
+                RidePhonePicker(
+                    adapter = adapter,
+                    onPick = { device ->
+                        AppPrefs.setRidePhone(context, device.address, device.name)
+                        rideName = device.name
+                        picking = false
+                        if (LinkState.status.value != LinkStatus.STOPPED) LinkService.restart(context)
+                        else LinkService.turnOn(context)
+                    },
+                    onCancel = null
+                )
             }
         }
         if (rideOn && status == LinkStatus.STOPPED) BigButton("Start link", onClick = onStart)
@@ -260,7 +268,7 @@ private fun LinkCard(
 
 /** The activity log in a small window with its own scroll, closed by default. */
 @Composable
-private fun ActivityCard() {
+internal fun ActivityCard() {
     val lines by LinkState.log.collectAsState()
     CollapsibleCard(
         title = "Activity",
@@ -291,7 +299,7 @@ private fun LogRow(line: LogLine) {
 }
 
 @Composable
-private fun RidePhonePicker(
+internal fun RidePhonePicker(
     adapter: BluetoothAdapter,
     onPick: (PairedDevice) -> Unit,
     onCancel: (() -> Unit)?

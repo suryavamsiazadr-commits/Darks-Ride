@@ -55,7 +55,7 @@ private data class SetupItem(val step: Step, val label: String, val done: Boolea
  * Closes itself once everything is done.
  */
 @Composable
-fun SetupCard(mode: AppMode) {
+fun SetupCard(mode: AppMode, hideWhenComplete: Boolean = false) {
     val context = LocalContext.current
     var refresh by remember { mutableIntStateOf(0) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { refresh++ }
@@ -90,6 +90,8 @@ fun SetupCard(mode: AppMode) {
             Step.BLUETOOTH, Step.RIDE_PHONE -> Unit // handled earlier on the screen
         }
     }
+
+    if (hideWhenComplete && missing == 0) return
 
     CollapsibleCard(
         title = if (missing == 0) "Setup complete" else "Setup: $missing step(s) left",

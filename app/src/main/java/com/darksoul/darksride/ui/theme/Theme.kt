@@ -33,21 +33,22 @@ data class GlassColors(
     val glow: Color
 )
 
+// True black (no blue or grey tint): kind to OLED screens and to the eyes at night.
 private val DarkGlass = GlassColors(
     isDark = true,
-    backgroundTop = Color(0xFF1B1F2E),
-    backgroundBottom = Night,
-    card = Color(0xB31C1F2B),
-    cardHighlight = Color(0x14FFFFFF),
-    cardBorderTop = Color(0x33FFFFFF),
-    cardBorderBottom = Color(0x0FFFFFFF),
+    backgroundTop = Color(0xFF000000),
+    backgroundBottom = Color(0xFF050505),
+    card = Color(0x0DFFFFFF),
+    cardHighlight = Color(0x0AFFFFFF),
+    cardBorderTop = Color(0x2EFFFFFF),
+    cardBorderBottom = Color(0x0AFFFFFF),
     glow = Ember.copy(alpha = 0.55f)
 )
 
 private val LightGlass = GlassColors(
     isDark = false,
-    backgroundTop = Color(0xFFF7F3EE),
-    backgroundBottom = Color(0xFFE6DFD5),
+    backgroundTop = Color(0xFFF6F6F5),
+    backgroundBottom = Color(0xFFE4E4E2),
     card = Color(0xCCFFFFFF),
     cardHighlight = Color(0xB3FFFFFF),
     cardBorderTop = Color(0xFFFFFFFF),
@@ -62,11 +63,14 @@ private val DarkScheme = darkColorScheme(
     onPrimary = Color.Black,
     secondary = Ember,
     onSecondary = Color.Black,
-    background = Night,
+    background = Color(0xFF000000),
     onBackground = Ash,
-    surface = Color(0xB31C1F2B),
+    surface = Color(0x0DFFFFFF),
     onSurface = Ash,
-    surfaceContainerHigh = Color(0xFF22263A)
+    surfaceContainer = Color(0xFF0E0E0E),
+    surfaceContainerHigh = Color(0xFF141414),
+    surfaceContainerHighest = Color(0xFF1A1A1A),
+    surfaceVariant = Color(0xFF1A1A1A)
 )
 
 private val LightScheme = lightColorScheme(
@@ -74,7 +78,7 @@ private val LightScheme = lightColorScheme(
     onPrimary = Color.White,
     secondary = EmberDeep,
     onSecondary = Color.White,
-    background = Color(0xFFF7F3EE),
+    background = Color(0xFFF6F6F5),
     onBackground = Ink,
     surface = Color(0xCCFFFFFF),
     onSurface = Ink,
