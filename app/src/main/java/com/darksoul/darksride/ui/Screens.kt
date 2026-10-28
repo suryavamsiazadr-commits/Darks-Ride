@@ -208,7 +208,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
 
     RideColumn {
         Title(if (mode == AppMode.MAIN) "Main phone" else "Ride screen")
-        Body("Dark's Ride · step 5 · messages", dim = true)
+        Body("Dark's Ride · step 6 · calls", dim = true)
 
         when {
             adapter == null -> Body("This phone has no Bluetooth, so it cannot be used.")
@@ -248,9 +248,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
                 StatusCard(status = status, peer = peer, mode = mode)
 
                 if (mode == AppMode.RIDE && status == LinkStatus.CONNECTED) {
-                    MessagePopup()
-                    NowPlayingCard()
-                    MessagesCard()
+                    RideContent()
                 }
 
                 if (mode == AppMode.MAIN) {
@@ -258,6 +256,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
                         Body("Ride phone: ${rideName ?: "not set"}", dim = true)
                         TextButton(onClick = { picking = true }) { Text("Change") }
                     }
+                    CallAccessCard()
                     MusicAccessCard()
                     NotificationFilterCard()
                 }

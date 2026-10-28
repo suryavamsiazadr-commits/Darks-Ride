@@ -24,8 +24,10 @@ import com.darksoul.darksride.MainActivity
 import com.darksoul.darksride.R
 import com.darksoul.darksride.media.MediaRelay
 import com.darksoul.darksride.media.RideMedia
+import com.darksoul.darksride.phone.CallRelay
 import com.darksoul.darksride.phone.NotifyBridge
 import com.darksoul.darksride.phone.PhoneListenerService
+import com.darksoul.darksride.phone.RideCall
 import com.darksoul.darksride.phone.RideNotifications
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -69,6 +71,9 @@ class LinkService : Service() {
 
     /** Main phone only: reads the music playing here and obeys the ride screen's buttons. */
     @Volatile private var mediaRelay: MediaRelay? = null
+
+    /** Main phone only: follows calls and answers / rejects them for the ride screen. */
+    @Volatile private var callRelay: CallRelay? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -133,6 +138,9 @@ class LinkService : Service() {
         closeSockets()
         mediaRelay?.stop()
         mediaRelay = null
+        callRelay?.stop()
+        callRelay = null
+        RideCall.clear(this)
         NotifyBridge.sink = null
         RideMedia.clear()
         RideNotifications.clear()
@@ -207,7 +215,9 @@ class LinkService : Service() {
         }
         if (AppPrefs.mode(this) == AppMode.MAIN) {
             NotifyBridge.sink = { msg -> scope.launch { send(msg) } }
+            if (callRelay == null) callRelay = CallRelay(this) { msg -> scope.launch { send(msg) } }
         }
+        callRelay?.ensureStarted()
         mediaRelay?.ensureStarted()
         loopJob = scope.launch {
             if (restart) old?.cancelAndJoin()
@@ -326,11 +336,14 @@ class LinkService : Service() {
         mediaRelay?.ensureStarted()
         mediaRelay?.refresh()
         if (myRole == "main") PhoneListenerService.resendToBike()
+        callRelay?.ensureStarted()
+        callRelay?.refresh()
 
         val heartbeat = launch {
             while (isActive) {
                 delay(10_000)
                 mediaRelay?.ensureStarted() // picks up notification access granted later
+                callRelay?.ensureStarted()  // picks up call access granted later
                 if (!send(JSONObject().put("t", "ping"))) break
                 if (System.currentTimeMillis() - lastHeard.get() > 45_000) {
                     LinkState.log("No reply for 45 s, rebuilding the link")
@@ -356,6 +369,7 @@ class LinkService : Service() {
             socket = null
             RideMedia.clear()
             RideNotifications.clear()
+            RideCall.clear(this@LinkService)
             LinkState.log("Disconnected from $peer")
             setStatus(LinkStatus.WAITING)
         }
@@ -371,7 +385,13 @@ class LinkService : Service() {
             }
             "chat" -> LinkState.log("Received: ${msg.optString("text")}")
             "media" -> RideMedia.update(msg)                    // ride screen
-            "cmd" -> mediaRelay?.command(msg.optString("a"))    // main phone
+            "cmd" -> {                                          // main phone
+                when (val action = msg.optString("a")) {
+                    "answer", "reject", "end" -> callRelay?.command(action)
+                    else -> mediaRelay?.command(action)
+                }
+            }
+            "call" -> RideCall.update(this, msg)                // ride screen
             "notif" -> {                                        // ride screen
                 RideNotifications.add(msg)
                 LinkState.log("Message: ${msg.optString("title")} (${msg.optString("app")})")
@@ -459,10 +479,15 @@ class LinkService : Service() {
             )
         }
 
-        /** Ride screen button (play, next, volume...) for the main phone. */
+        /** Ride screen button (play, next, volume, answer...) for the main phone. */
         fun sendCommand(c: Context, action: String) {
+            c.startService(commandIntent(c, action))
+        }
+
+        /** The same button as an Intent, for notification buttons (e.g. Answer on the call pop-up). */
+        fun commandIntent(c: Context, action: String): Intent {
             val json = JSONObject().put("t", "cmd").put("a", action).toString()
-            c.startService(intent(c, ACTION_SEND).putExtra(EXTRA_JSON, json))
+            return intent(c, ACTION_SEND).putExtra(EXTRA_JSON, json)
         }
 
         fun sendTest(c: Context, text: String) {

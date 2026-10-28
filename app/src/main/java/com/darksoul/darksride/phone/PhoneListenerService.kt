@@ -17,6 +17,7 @@ import org.json.JSONObject
  * Notification access for the main phone.
  *
  * - Step 4: having this access lets Dark's Ride see and control other apps' music.
+ * - Step 6: hands call notifications (caller name, Answer/Decline buttons) to CallRelay.
  * - Step 5: forwards WhatsApp / SMS (and optionally other) notifications to the bike,
  *   and tells the bike when one is cleared on the phone.
  */
@@ -41,11 +42,16 @@ class PhoneListenerService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
-        if (sbn != null) forward(sbn)
+        if (sbn == null) return
+        if (isCall(sbn)) CallRelay.active?.onCallNotification(sbn) else forward(sbn)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         if (sbn == null) return
+        if (isCall(sbn)) {
+            CallRelay.active?.onCallNotificationRemoved(sbn)
+            return
+        }
         if (lastSent.remove(sbn.key) != null) {
             NotifyBridge.send(JSONObject().put("t", "notif_gone").put("id", sbn.key))
         }
@@ -58,10 +64,15 @@ class PhoneListenerService : NotificationListenerService() {
         active.sortedBy { it.postTime }.takeLast(RESEND_MAX).forEach { forward(it) }
     }
 
+    /** Incoming / ongoing call notifications go to the call relay, not the messages list. */
+    private fun isCall(sbn: StatusBarNotification): Boolean =
+        sbn.packageName != packageName && sbn.notification?.category == Notification.CATEGORY_CALL
+
     private fun forward(sbn: StatusBarNotification) {
         if (sbn.packageName == packageName || sbn.isOngoing) return
         val n = sbn.notification ?: return
         if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
+        if (n.category == Notification.CATEGORY_CALL || n.category == Notification.CATEGORY_MISSED_CALL) return
         if (!NotifyFilter.allowed(this, NotifyFilter.groupOf(sbn.packageName))) return
 
         // Chat apps use "messaging style": read the newest message and who sent it.

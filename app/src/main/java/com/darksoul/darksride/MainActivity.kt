@@ -28,6 +28,11 @@ class MainActivity : ComponentActivity() {
             AppPrefs.setLinkEnabled(this, true)
             PhoneListenerService.resume(this)
         }
+        // Ride screen: a call can open the app over the lock screen and wake the display.
+        if (AppPrefs.mode(this) == AppMode.RIDE) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        }
         enableEdgeToEdge()
         setContent {
             DarksRideTheme {

@@ -10,3 +10,6 @@ val Ash = Color(0xFFEDEDED)
 
 // Status colour for "connected".
 val Go = Color(0xFF3DDC84)
+
+// Reject / end call.
+val Stop = Color(0xFFE5484D)

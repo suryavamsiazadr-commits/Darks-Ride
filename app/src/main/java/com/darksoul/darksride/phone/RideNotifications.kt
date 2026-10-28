@@ -37,6 +37,15 @@ object RideNotifications {
         _popup.value = n
     }
 
+    /** An entry made on the ride screen itself, e.g. a missed call. */
+    fun addLocal(app: String, title: String, text: String) {
+        val now = System.currentTimeMillis()
+        add(
+            JSONObject().put("id", "local-$now").put("app", app)
+                .put("title", title).put("text", text).put("time", now)
+        )
+    }
+
     /** Cleared on the main phone (read or swiped away). */
     fun remove(id: String) {
         _items.update { list -> list.filterNot { it.id == id } }
