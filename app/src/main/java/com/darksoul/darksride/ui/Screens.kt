@@ -208,7 +208,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
 
     RideColumn {
         Title(if (mode == AppMode.MAIN) "Main phone" else "Ride screen")
-        Body("Dark's Ride · step 6 · calls", dim = true)
+        Body("Dark's Ride · step 7 · send to bike", dim = true)
 
         when {
             adapter == null -> Body("This phone has no Bluetooth, so it cannot be used.")

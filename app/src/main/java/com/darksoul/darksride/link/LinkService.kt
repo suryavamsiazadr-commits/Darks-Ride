@@ -24,6 +24,8 @@ import com.darksoul.darksride.MainActivity
 import com.darksoul.darksride.R
 import com.darksoul.darksride.media.MediaRelay
 import com.darksoul.darksride.media.RideMedia
+import com.darksoul.darksride.nav.Destination
+import com.darksoul.darksride.nav.RideNav
 import com.darksoul.darksride.overlay.RideOverlay
 import com.darksoul.darksride.phone.CallRelay
 import com.darksoul.darksride.phone.NotifyBridge
@@ -97,6 +99,16 @@ class LinkService : Service() {
                 LinkState.log("Turned off from the notification")
                 prepareTurnOff(this)
                 stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_NAV -> { // "Send to bike" from the share menu (main phone)
+                val text = intent.getStringExtra(EXTRA_NAV_TEXT).orEmpty()
+                if (loopJob?.isActive == true) {
+                    scope.launch { deliverDestination(text) }
+                    return START_STICKY
+                }
+                AppPrefs.setPendingNav(this, text)
+                stopSelf(startId)
                 return START_NOT_STICKY
             }
             ACTION_SEND -> {
@@ -337,7 +349,13 @@ class LinkService : Service() {
         // Main phone: tell the ride screen what is playing right away.
         mediaRelay?.ensureStarted()
         mediaRelay?.refresh()
-        if (myRole == "main") PhoneListenerService.resendToBike()
+        if (myRole == "main") {
+            PhoneListenerService.resendToBike()
+            // A destination shared while the bike was away goes out now.
+            AppPrefs.takePendingNav(this@LinkService)?.let { text ->
+                scope.launch { deliverDestination(text) }
+            }
+        }
         callRelay?.ensureStarted()
         callRelay?.refresh()
 
@@ -394,6 +412,7 @@ class LinkService : Service() {
                 }
             }
             "call" -> RideCall.update(this, msg)                // ride screen
+            "nav" -> RideNav.received(this, msg)                // ride screen
             "notif" -> {                                        // ride screen
                 RideOverlay.showMessage(this, RideNotifications.add(msg))
                 LinkState.log("Message: ${msg.optString("title")} (${msg.optString("app")})")
@@ -410,6 +429,21 @@ class LinkService : Service() {
             true
         } catch (e: IOException) {
             false
+        }
+    }
+
+    /** Main phone: work out the destination (may use internet) and send it to the bike. */
+    private fun deliverDestination(text: String) {
+        val json = runCatching { Destination.build(text) }.getOrNull()
+        if (json == null) {
+            LinkState.log("Could not read that place")
+            return
+        }
+        if (send(json)) {
+            LinkState.log("Sent to bike: ${json.optString("name")}")
+        } else {
+            AppPrefs.setPendingNav(this, text)
+            LinkState.log("Bike not connected, destination saved")
         }
     }
 
@@ -439,6 +473,8 @@ class LinkService : Service() {
         private const val EXTRA_TEXT = "text"
         private const val EXTRA_REASON = "reason"
         private const val EXTRA_JSON = "json"
+        private const val ACTION_NAV = "com.darksoul.darksride.NAV"
+        private const val EXTRA_NAV_TEXT = "nav_text"
 
         private fun intent(c: Context, action: String) =
             Intent(c, LinkService::class.java).setAction(action)
@@ -490,6 +526,11 @@ class LinkService : Service() {
         fun commandIntent(c: Context, action: String): Intent {
             val json = JSONObject().put("t", "cmd").put("a", action).toString()
             return intent(c, ACTION_SEND).putExtra(EXTRA_JSON, json)
+        }
+
+        /** Main phone: a place shared with "Send to bike". */
+        fun sendDestination(c: Context, sharedText: String) {
+            c.startService(intent(c, ACTION_NAV).putExtra(EXTRA_NAV_TEXT, sharedText))
         }
 
         fun sendTest(c: Context, text: String) {

@@ -18,6 +18,8 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <!-- Ride screen: floating call and message cards on top of Google Maps -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Main phone: open Google Maps short links to find a shared place's exact location -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Start the link by itself after the phone restarts -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -58,6 +60,23 @@
             android:resizeableActivity="true"
             android:taskAffinity="com.darksoul.darksride.second"
             android:theme="@style/Theme.DarksRide" />
+
+        <!-- "Send to bike" in the share menu: places from Google Maps / WhatsApp -->
+        <activity
+            android:name=".nav.ShareToBikeActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="Send to bike"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
 
         <!-- Keeps the phone-to-phone Bluetooth link alive -->
         <service

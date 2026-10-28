@@ -52,6 +52,7 @@ fun RideContent() {
         CallCard(c)
     } else {
         MessagePopup()
+        DestinationCard()
         NowPlayingCard()
         MessagesCard()
     }

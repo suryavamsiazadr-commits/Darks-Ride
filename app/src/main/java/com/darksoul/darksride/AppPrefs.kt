@@ -63,6 +63,25 @@ object AppPrefs {
         putBoolean(key, value)
     }
 
+    // ---- Destination shared while the bike was not connected (main phone) ----
+    private const val KEY_PENDING_NAV = "pending_nav"
+    private const val KEY_PENDING_NAV_TIME = "pending_nav_time"
+    private const val PENDING_NAV_MAX_AGE = 3 * 60 * 60 * 1000L // 3 hours
+
+    fun setPendingNav(c: Context, sharedText: String) = prefs(c).edit {
+        putString(KEY_PENDING_NAV, sharedText)
+        putLong(KEY_PENDING_NAV_TIME, System.currentTimeMillis())
+    }
+
+    /** Returns the waiting destination (if still fresh) and forgets it. */
+    fun takePendingNav(c: Context): String? {
+        val p = prefs(c)
+        val text = p.getString(KEY_PENDING_NAV, null) ?: return null
+        val age = System.currentTimeMillis() - p.getLong(KEY_PENDING_NAV_TIME, 0L)
+        p.edit { remove(KEY_PENDING_NAV); remove(KEY_PENDING_NAV_TIME) }
+        return if (age <= PENDING_NAV_MAX_AGE) text else null
+    }
+
     /** Everything the link needs to start without the rider opening the app. */
     fun readyToLink(c: Context): Boolean {
         val mode = mode(c) ?: return false
