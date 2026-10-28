@@ -36,6 +36,7 @@ fun AppRoot() {
     when (val m = mode) {
         null -> ModeChoiceScreen(onPick = { picked ->
             AppPrefs.setMode(context, picked)
+            AppPrefs.setLinkEnabled(context, true)
             mode = picked
         })
         else -> LinkScreen(mode = m, onChangeRole = {

@@ -90,7 +90,12 @@ class LinkService : Service() {
             }
             else -> { // ACTION_START, or the system restarting us after a kill
                 if (!goForeground()) return START_NOT_STICKY
-                if (loopJob?.isActive != true) startLoop(restart = false)
+                if (loopJob?.isActive != true) {
+                    val reason = if (intent == null) "Link restarted by Android"
+                    else intent.getStringExtra(EXTRA_REASON)
+                    if (reason != null) LinkState.log(reason)
+                    startLoop(restart = false)
+                }
             }
         }
         return START_STICKY
@@ -208,7 +213,11 @@ class LinkService : Service() {
         }
     }
 
-    /** Main phone: connect to the saved ride phone, retry with a growing pause. */
+    /**
+     * Main phone: connect to the saved ride phone, retry with a growing pause.
+     * Retries every 15 s at most for the first 5 minutes, then every 60 s to save battery
+     * (e.g. a whole day at the office). Coming back in range links within about a minute.
+     */
     private suspend fun mainLoop(adapter: BluetoothAdapter) {
         val address = AppPrefs.rideAddress(this)
         if (address == null) {
@@ -220,6 +229,7 @@ class LinkService : Service() {
         var pause = 2_000L
         var offLogged = false
         var missLogged = false
+        var missingSince = 0L
         while (currentCoroutineContext().isActive) {
             if (!adapter.isEnabled) {
                 if (!offLogged) LinkState.log("Bluetooth is off, waiting")
@@ -238,11 +248,15 @@ class LinkService : Service() {
             } catch (e: IOException) {
                 runCatching { socket?.close() }
                 socket = null
-                if (!missLogged) LinkState.log("Ride phone not reachable yet, retrying")
+                if (!missLogged) {
+                    LinkState.log("Ride phone not reachable yet, retrying")
+                    missingSince = System.currentTimeMillis()
+                }
                 missLogged = true
                 setStatus(LinkStatus.WAITING)
                 delay(pause)
-                pause = (pause * 2).coerceAtMost(15_000L)
+                val longAway = System.currentTimeMillis() - missingSince > 5 * 60_000L
+                pause = if (longAway) 60_000L else (pause * 2).coerceAtMost(15_000L)
                 continue
             }
             pause = 2_000L
@@ -342,18 +356,33 @@ class LinkService : Service() {
         private const val ACTION_RESTART = "com.darksoul.darksride.RESTART"
         private const val ACTION_SEND = "com.darksoul.darksride.SEND"
         private const val EXTRA_TEXT = "text"
+        private const val EXTRA_REASON = "reason"
 
         private fun intent(c: Context, action: String) =
             Intent(c, LinkService::class.java).setAction(action)
 
-        fun start(c: Context) =
+        /** Started by the rider: also remember to start again after a restart. */
+        fun start(c: Context) {
+            AppPrefs.setLinkEnabled(c, true)
             ContextCompat.startForegroundService(c, intent(c, ACTION_START))
+        }
 
-        fun restart(c: Context) =
+        fun restart(c: Context) {
+            AppPrefs.setLinkEnabled(c, true)
             ContextCompat.startForegroundService(c, intent(c, ACTION_RESTART))
+        }
 
+        /** Stopped by the rider: stays off until started again, even after a restart. */
         fun stop(c: Context) {
+            AppPrefs.setLinkEnabled(c, false)
             c.stopService(Intent(c, LinkService::class.java))
+        }
+
+        /** Started by the phone itself (after a restart or an app update). */
+        fun resume(c: Context, reason: String) {
+            ContextCompat.startForegroundService(
+                c, intent(c, ACTION_START).putExtra(EXTRA_REASON, reason)
+            )
         }
 
         fun sendTest(c: Context, text: String) {

@@ -13,6 +13,7 @@ object AppPrefs {
     private const val KEY_MODE = "mode"
     private const val KEY_RIDE_ADDRESS = "ride_address"
     private const val KEY_RIDE_NAME = "ride_name"
+    private const val KEY_LINK_ENABLED = "link_enabled"
 
     private fun prefs(c: Context): SharedPreferences =
         c.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -33,5 +34,18 @@ object AppPrefs {
     fun setRidePhone(c: Context, address: String, name: String) = prefs(c).edit {
         putString(KEY_RIDE_ADDRESS, address)
         putString(KEY_RIDE_NAME, name)
+    }
+
+    /** False only after the rider taps "Stop link"; then the link stays off until started again. */
+    fun linkEnabled(c: Context): Boolean = prefs(c).getBoolean(KEY_LINK_ENABLED, true)
+
+    fun setLinkEnabled(c: Context, enabled: Boolean) = prefs(c).edit {
+        putBoolean(KEY_LINK_ENABLED, enabled)
+    }
+
+    /** Everything the link needs to start without the rider opening the app. */
+    fun readyToLink(c: Context): Boolean {
+        val mode = mode(c) ?: return false
+        return mode == AppMode.RIDE || rideAddress(c) != null
     }
 }

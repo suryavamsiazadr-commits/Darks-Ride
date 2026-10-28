@@ -196,7 +196,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit) {
     var rideAddress by remember { mutableStateOf(AppPrefs.rideAddress(context)) }
     var rideName by remember { mutableStateOf(AppPrefs.rideName(context)) }
     var picking by remember { mutableStateOf(false) }
-    var userStopped by rememberSaveable { mutableStateOf(false) }
+    var userStopped by rememberSaveable { mutableStateOf(!AppPrefs.linkEnabled(context)) }
 
     // Start the link by itself once everything it needs is in place.
     val ready = hasAccess && bluetoothOn && (mode == AppMode.RIDE || rideAddress != null)
@@ -208,7 +208,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit) {
 
     RideColumn {
         Title(if (mode == AppMode.MAIN) "Main phone" else "Ride screen")
-        Body("Dark's Ride · Bluetooth link test", dim = true)
+        Body("Dark's Ride · link test (step 3)", dim = true)
 
         when {
             adapter == null -> Body("This phone has no Bluetooth, so it cannot be used.")
@@ -285,6 +285,11 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit) {
                     })
                 }
 
+                Body(
+                    if (userStopped) "The link stays off until you start it."
+                    else "Starts by itself after a phone restart. You don't need to open the app.",
+                    dim = true
+                )
                 Body("Reconnects since start: $reconnects", dim = true)
                 ActivityLog(log)
             }
