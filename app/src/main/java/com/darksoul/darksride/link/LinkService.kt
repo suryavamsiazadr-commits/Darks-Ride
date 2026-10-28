@@ -22,6 +22,8 @@ import com.darksoul.darksride.AppMode
 import com.darksoul.darksride.AppPrefs
 import com.darksoul.darksride.MainActivity
 import com.darksoul.darksride.R
+import com.darksoul.darksride.media.MediaRelay
+import com.darksoul.darksride.media.RideMedia
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -62,6 +64,9 @@ class LinkService : Service() {
     private var connectionsThisRun = 0
     private var lastStatus: LinkStatus? = null
 
+    /** Main phone only: reads the music playing here and obeys the ride screen's buttons. */
+    @Volatile private var mediaRelay: MediaRelay? = null
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -75,9 +80,17 @@ class LinkService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_SEND -> {
-                val text = intent.getStringExtra(EXTRA_TEXT).orEmpty()
                 if (loopJob?.isActive == true) {
-                    scope.launch { sendChat(text) }
+                    val json = intent.getStringExtra(EXTRA_JSON)
+                    if (json != null) {
+                        scope.launch {
+                            val sent = runCatching { send(JSONObject(json)) }.getOrDefault(false)
+                            if (!sent) LinkState.log("Not connected, button not sent")
+                        }
+                    } else {
+                        val text = intent.getStringExtra(EXTRA_TEXT).orEmpty()
+                        scope.launch { sendChat(text) }
+                    }
                     return START_STICKY
                 }
                 LinkState.log("Link is off, message not sent")
@@ -104,6 +117,9 @@ class LinkService : Service() {
     override fun onDestroy() {
         loopJob?.cancel()
         closeSockets()
+        mediaRelay?.stop()
+        mediaRelay = null
+        RideMedia.clear()
         scope.cancel()
         LinkState.setStatus(LinkStatus.STOPPED)
         LinkState.log("Link stopped")
@@ -165,6 +181,10 @@ class LinkService : Service() {
         }
         connectionsThisRun = 0
         LinkState.resetReconnects()
+        if (AppPrefs.mode(this) == AppMode.MAIN && mediaRelay == null) {
+            mediaRelay = MediaRelay(this) { msg -> scope.launch { send(msg) } }
+        }
+        mediaRelay?.ensureStarted()
         loopJob = scope.launch {
             if (restart) old?.cancelAndJoin()
             val adapter = getSystemService(BluetoothManager::class.java)?.adapter
@@ -278,10 +298,14 @@ class LinkService : Service() {
         val lastHeard = AtomicLong(System.currentTimeMillis())
         val myRole = if (AppPrefs.mode(this@LinkService) == AppMode.RIDE) "ride" else "main"
         send(JSONObject().put("t", "hello").put("name", Build.MODEL).put("role", myRole))
+        // Main phone: tell the ride screen what is playing right away.
+        mediaRelay?.ensureStarted()
+        mediaRelay?.refresh()
 
         val heartbeat = launch {
             while (isActive) {
                 delay(10_000)
+                mediaRelay?.ensureStarted() // picks up notification access granted later
                 if (!send(JSONObject().put("t", "ping"))) break
                 if (System.currentTimeMillis() - lastHeard.get() > 45_000) {
                     LinkState.log("No reply for 45 s, rebuilding the link")
@@ -305,6 +329,7 @@ class LinkService : Service() {
             synchronized(writeLock) { output = null }
             runCatching { sock.close() }
             socket = null
+            RideMedia.clear()
             LinkState.log("Disconnected from $peer")
             setStatus(LinkStatus.WAITING)
         }
@@ -319,6 +344,8 @@ class LinkService : Service() {
                 LinkState.log("Linked with ${msg.optString("name")} ($role)")
             }
             "chat" -> LinkState.log("Received: ${msg.optString("text")}")
+            "media" -> RideMedia.update(msg)                    // ride screen
+            "cmd" -> mediaRelay?.command(msg.optString("a"))    // main phone
         }
     }
 
@@ -357,6 +384,7 @@ class LinkService : Service() {
         private const val ACTION_SEND = "com.darksoul.darksride.SEND"
         private const val EXTRA_TEXT = "text"
         private const val EXTRA_REASON = "reason"
+        private const val EXTRA_JSON = "json"
 
         private fun intent(c: Context, action: String) =
             Intent(c, LinkService::class.java).setAction(action)
@@ -383,6 +411,12 @@ class LinkService : Service() {
             ContextCompat.startForegroundService(
                 c, intent(c, ACTION_START).putExtra(EXTRA_REASON, reason)
             )
+        }
+
+        /** Ride screen button (play, next, volume...) for the main phone. */
+        fun sendCommand(c: Context, action: String) {
+            val json = JSONObject().put("t", "cmd").put("a", action).toString()
+            c.startService(intent(c, ACTION_SEND).putExtra(EXTRA_JSON, json))
         }
 
         fun sendTest(c: Context, text: String) {

@@ -14,6 +14,14 @@
     <!-- Start the link by itself after the phone restarts -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- Show music app names (YouTube Music, Spotify...) on the ride screen -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -48,6 +56,17 @@
             android:name=".link.LinkService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
+
+        <!-- Main phone: notification access, used for music control (and notifications in step 5) -->
+        <service
+            android:name=".phone.PhoneListenerService"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- Starts the link after a phone restart or an app update -->
         <receiver

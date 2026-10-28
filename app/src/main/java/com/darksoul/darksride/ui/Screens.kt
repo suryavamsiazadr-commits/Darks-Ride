@@ -86,7 +86,7 @@ fun RideColumn(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun BigButton(
+internal fun BigButton(
     text: String,
     onClick: () -> Unit,
     enabled: Boolean = true,
@@ -108,7 +108,7 @@ private fun BigButton(
 }
 
 @Composable
-private fun Card(onClick: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+internal fun Card(onClick: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
     val shape = RoundedCornerShape(20.dp)
     val colors = MaterialTheme.colorScheme
     var modifier = Modifier
@@ -125,19 +125,19 @@ private fun Card(onClick: (() -> Unit)? = null, content: @Composable ColumnScope
 }
 
 @Composable
-private fun Title(text: String) = Text(
+internal fun Title(text: String) = Text(
     text, fontSize = 28.sp, fontWeight = FontWeight.Bold,
     color = MaterialTheme.colorScheme.primary
 )
 
 @Composable
-private fun Heading(text: String) = Text(
+internal fun Heading(text: String) = Text(
     text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
     color = MaterialTheme.colorScheme.onBackground
 )
 
 @Composable
-private fun Body(text: String, dim: Boolean = false) = Text(
+internal fun Body(text: String, dim: Boolean = false) = Text(
     text, fontSize = 16.sp,
     color = MaterialTheme.colorScheme.onBackground.copy(alpha = if (dim) 0.65f else 1f)
 )
@@ -208,7 +208,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit) {
 
     RideColumn {
         Title(if (mode == AppMode.MAIN) "Main phone" else "Ride screen")
-        Body("Dark's Ride · link test (step 3)", dim = true)
+        Body("Dark's Ride · step 4 · music control", dim = true)
 
         when {
             adapter == null -> Body("This phone has no Bluetooth, so it cannot be used.")
@@ -247,11 +247,16 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit) {
             else -> {
                 StatusCard(status = status, peer = peer, mode = mode)
 
+                if (mode == AppMode.RIDE && status == LinkStatus.CONNECTED) {
+                    NowPlayingCard()
+                }
+
                 if (mode == AppMode.MAIN) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Body("Ride phone: ${rideName ?: "not set"}", dim = true)
                         TextButton(onClick = { picking = true }) { Text("Change") }
                     }
+                    MusicAccessCard()
                 }
 
                 if (status == LinkStatus.STOPPED) {
