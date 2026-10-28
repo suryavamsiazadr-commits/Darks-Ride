@@ -29,6 +29,8 @@ import com.darksoul.darksride.R
 import com.darksoul.darksride.media.MediaRelay
 import com.darksoul.darksride.media.RideMedia
 import com.darksoul.darksride.nav.Destination
+import com.darksoul.darksride.nav.NavHistory
+import com.darksoul.darksride.nav.RideDestination
 import com.darksoul.darksride.nav.RideNav
 import com.darksoul.darksride.overlay.RideOverlay
 import com.darksoul.darksride.panel.RidePanel
@@ -471,6 +473,7 @@ class LinkService : Service() {
             return
         }
         if (send(json)) {
+            NavHistory.add(this, RideDestination.fromJson(json))
             LinkState.log("Sent to bike: ${json.optString("name")}")
         } else {
             AppPrefs.setPendingNav(this, text)

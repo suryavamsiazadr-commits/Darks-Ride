@@ -166,12 +166,7 @@ fun LinkScreen(
                     if (rideOn && status == LinkStatus.STOPPED) {
                         BigButton("Start link", onClick = { LinkService.turnOn(context) })
                     }
-                    Card {
-                        Text("Plan a ride", fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface)
-                        Body("In Google Maps, find a place and tap Share → Send to bike. " +
-                            "Handlebar HQ starts navigating.", dim = true)
-                    }
+                    SendToBikeCard()
                 }
             }
         }

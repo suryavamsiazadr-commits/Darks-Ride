@@ -22,14 +22,21 @@ object RidePanel {
             .firstOrNull { it.displayId != Display.DEFAULT_DISPLAY && it.state != Display.STATE_OFF }
             ?.displayId
 
-    /** Opens the panel on the second screen. Returns false if there is none or it failed. */
+    /**
+     * Opens the panel on the second screen. Returns false if there is none or it failed.
+     * Always a fresh window on the small screen: reusing the old one made Android bring it
+     * back wherever it last was (often the main screen, on top of Maps).
+     */
     fun open(c: Context): Boolean {
         val id = secondaryDisplayId(c) ?: return false
         return try {
+            RidePanelActivity.closeOpenPanel()
             val options = ActivityOptions.makeBasic().setLaunchDisplayId(id)
             val intent = Intent(c, RidePanelActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
             c.startActivity(intent, options.toBundle())
+            // Dark's Ride steps back on the main screen, so Google Maps keeps it.
+            RideMainHandle.sendToBack()
             true
         } catch (e: Exception) {
             LinkState.log("Could not open the panel on the small screen")

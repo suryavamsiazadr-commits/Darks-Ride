@@ -58,7 +58,6 @@
             android:name=".panel.RidePanelActivity"
             android:exported="false"
             android:excludeFromRecents="true"
-            android:launchMode="singleTask"
             android:resizeableActivity="true"
             android:taskAffinity="com.darksoul.darksride.panel"
             android:theme="@style/Theme.DarksRide" />

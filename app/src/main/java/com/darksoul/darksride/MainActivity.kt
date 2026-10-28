@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.fragment.app.FragmentActivity
 import com.darksoul.darksride.link.LinkService
 import com.darksoul.darksride.link.LinkState
+import com.darksoul.darksride.panel.RideMainHandle
 import com.darksoul.darksride.phone.PhoneListenerService
 import com.darksoul.darksride.ui.LinkScreen
 import com.darksoul.darksride.ui.MainShell
@@ -22,6 +23,16 @@ import com.darksoul.darksride.ui.theme.DarksRideTheme
 
 /** FragmentActivity (a ComponentActivity) because the fingerprint prompt needs it. */
 class MainActivity : FragmentActivity() {
+    override fun onResume() {
+        super.onResume()
+        if (AppPrefs.mode(this) == AppMode.RIDE) RideMainHandle.attach(this)
+    }
+
+    override fun onPause() {
+        RideMainHandle.detach(this)
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Ride mode decides what runs in the background; opening the app doesn't change it.

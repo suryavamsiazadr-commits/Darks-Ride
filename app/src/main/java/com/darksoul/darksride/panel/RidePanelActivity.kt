@@ -1,6 +1,10 @@
 package com.darksoul.darksride.panel
 
+import android.app.Activity
+import android.hardware.display.DisplayManager
 import android.os.Bundle
+import android.view.Display
+import java.lang.ref.WeakReference
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -26,8 +30,22 @@ import com.darksoul.darksride.ui.theme.DarksRideTheme
 
 /** The ride panel shown on the second screen: calls, destination, music and messages. */
 class RidePanelActivity : ComponentActivity() {
+
+    private val displayWatcher = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) = Unit
+        override fun onDisplayChanged(displayId: Int) = closeIfOnMainScreen()
+        override fun onDisplayRemoved(displayId: Int) = closeIfOnMainScreen()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // The panel only belongs on the small screen; never cover Maps on the main one.
+        if (display?.displayId == Display.DEFAULT_DISPLAY) {
+            finish()
+            return
+        }
+        open = WeakReference(this)
+        getSystemService(DisplayManager::class.java).registerDisplayListener(displayWatcher, null)
         setShowWhenLocked(true)
         enableEdgeToEdge()
         setContent {
@@ -35,6 +53,48 @@ class RidePanelActivity : ComponentActivity() {
                 PanelScreen(onClose = { finish() })
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        closeIfOnMainScreen()
+    }
+
+    override fun onDestroy() {
+        runCatching { getSystemService(DisplayManager::class.java).unregisterDisplayListener(displayWatcher) }
+        if (open?.get() === this) open = null
+        super.onDestroy()
+    }
+
+    /** Swivelled back (small screen gone): Android moves us to the main screen, so close. */
+    private fun closeIfOnMainScreen() {
+        if (!isFinishing && display?.displayId == Display.DEFAULT_DISPLAY) finish()
+    }
+
+    companion object {
+        private var open: WeakReference<RidePanelActivity>? = null
+
+        fun closeOpenPanel() {
+            open?.get()?.finish()
+            open = null
+        }
+    }
+}
+
+/** Lets the ride panel send the full Dark's Ride screen behind Google Maps. */
+object RideMainHandle {
+    private var main: WeakReference<Activity>? = null
+
+    fun attach(activity: Activity) {
+        main = WeakReference(activity)
+    }
+
+    fun detach(activity: Activity) {
+        if (main?.get() === activity) main = null
+    }
+
+    fun sendToBack() {
+        main?.get()?.moveTaskToBack(true)
     }
 }
 

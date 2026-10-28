@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color as AndroidColor
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.view.WindowManager
 import android.widget.Toast
@@ -441,13 +442,27 @@ private fun OfficialAppsCard() {
         title = "Official copies",
         stateKey = "official_docs",
         defaultOpen = false,
-        summary = "DigiLocker · mParivahan"
+        summary = if (Build.MANUFACTURER.equals("samsung", ignoreCase = true))
+            "Samsung Pass · DigiLocker · mParivahan" else "DigiLocker · mParivahan"
     ) {
         Body("Traffic police accept digital licences and RCs only from DigiLocker or mParivahan, " +
             "not photos. Keep the originals with you too.", dim = true)
+        if (Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
+            // Samsung Pass keeps DigiLocker documents on Galaxy phones (newer phones: Samsung Wallet).
+            BigButton("Open Samsung Pass", onClick = {
+                openFirst(context, "com.samsung.android.samsungpass", "com.samsung.android.spay")
+            })
+        }
         BigButton("Open DigiLocker", secondary = true, onClick = { openApp(context, "com.digilocker.android") })
         BigButton("Open mParivahan", secondary = true, onClick = { openApp(context, "com.nic.mparivahan") })
     }
+}
+
+/** Opens the first of these apps that's installed. */
+private fun openFirst(context: Context, vararg packages: String) {
+    val launch = packages.firstNotNullOfOrNull { context.packageManager.getLaunchIntentForPackage(it) }
+    if (launch != null) context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    else Toast.makeText(context, "Samsung Pass isn't installed on this phone", Toast.LENGTH_LONG).show()
 }
 
 private fun openApp(context: Context, pkg: String) {

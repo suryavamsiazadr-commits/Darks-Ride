@@ -19,15 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 
-/** A destination sent from the main phone. */
-data class RideDestination(
-    val name: String,
-    val query: String?,
-    val url: String?,
-    val lat: Double?,
-    val lng: Double?
-)
-
 /** Ride screen side of "Send to bike": starts Google Maps navigation. */
 object RideNav {
     private const val MAPS = "com.google.android.apps.maps"
@@ -40,14 +31,9 @@ object RideNav {
     val last: StateFlow<RideDestination?> = _last.asStateFlow()
 
     fun received(c: Context, msg: JSONObject) {
-        val d = RideDestination(
-            name = msg.optString("name").ifEmpty { "Destination" },
-            query = msg.optString("query").ifEmpty { null },
-            url = msg.optString("url").ifEmpty { null },
-            lat = if (msg.has("lat")) msg.optDouble("lat") else null,
-            lng = if (msg.has("lng")) msg.optDouble("lng") else null
-        )
+        val d = RideDestination.fromJson(msg)
         _last.value = d
+        NavHistory.add(c, d)
         LinkState.log("Destination: ${d.name}")
         // Opening Maps from the background is only allowed with "Display over other apps".
         val opened = navigate(c, d) && RideOverlay.canShow(c)
@@ -61,6 +47,26 @@ object RideNav {
             )
         )
         if (!opened) notify(c, d)
+    }
+
+    /** Picked from Recent: becomes the current destination and starts navigating. */
+    fun goAgain(c: Context, d: RideDestination) {
+        val again = d.copy(sentAt = System.currentTimeMillis())
+        _last.value = again
+        NavHistory.add(c, again)
+        navigate(c, again)
+    }
+
+    /** Shows the place on the map (no navigation), e.g. to look around first. */
+    fun showOnMap(c: Context, d: RideDestination) {
+        val uri = when {
+            d.lat != null && d.lng != null ->
+                Uri.parse("geo:${d.lat},${d.lng}?q=${d.lat},${d.lng}(${Uri.encode(d.name)})")
+            else -> Uri.parse("geo:0,0?q=${Uri.encode(d.query ?: d.name)}")
+        }
+        val intent = Intent(Intent.ACTION_VIEW, uri).setPackage(MAPS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val options = ActivityOptions.makeBasic().setLaunchDisplayId(Display.DEFAULT_DISPLAY).toBundle()
+        runCatching { c.startActivity(intent, options) }
     }
 
     /** Opens Google Maps turn-by-turn on the main screen. Returns false if it couldn't. */

@@ -34,6 +34,7 @@ fun SettingsScreen(
         } else {
             SmallScreenCard()
         }
+        NavHistoryCard(mode)
         LinkCard(mode)
         AppearanceCard()
         if (mode == AppMode.MAIN) BackupCard()
