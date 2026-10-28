@@ -3,6 +3,9 @@ package com.darksoul.darksride
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /** Which job this phone does. */
 enum class AppMode { MAIN, RIDE }
@@ -39,8 +42,21 @@ object AppPrefs {
     /** False only after the rider taps "Stop link"; then the link stays off until started again. */
     fun linkEnabled(c: Context): Boolean = prefs(c).getBoolean(KEY_LINK_ENABLED, true)
 
-    fun setLinkEnabled(c: Context, enabled: Boolean) = prefs(c).edit {
-        putBoolean(KEY_LINK_ENABLED, enabled)
+    fun setLinkEnabled(c: Context, enabled: Boolean) {
+        prefs(c).edit { putBoolean(KEY_LINK_ENABLED, enabled) }
+        _rideMode.value = enabled
+    }
+
+    /** Ride mode on/off (= linkEnabled), live for the switch on screen. */
+    private val _rideMode = MutableStateFlow(true)
+    private var rideModeLoaded = false
+
+    fun rideMode(c: Context): StateFlow<Boolean> {
+        if (!rideModeLoaded) {
+            rideModeLoaded = true
+            _rideMode.value = linkEnabled(c)
+        }
+        return _rideMode.asStateFlow()
     }
 
     // ---- Which notifications go to the bike (main phone) ----

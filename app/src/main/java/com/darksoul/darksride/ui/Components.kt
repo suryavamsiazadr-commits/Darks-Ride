@@ -50,14 +50,17 @@ import com.darksoul.darksride.ui.theme.LocalGlass
 // ---------- Page ----------
 
 @Composable
-fun RideColumn(content: @Composable ColumnScope.() -> Unit) {
+fun RideColumn(
+    insets: WindowInsets = WindowInsets.safeDrawing,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(listOf(LocalGlass.current.backgroundTop, LocalGlass.current.backgroundBottom))
             )
-            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .windowInsetsPadding(insets)
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),

@@ -105,7 +105,7 @@ class LinkService : Service() {
         }
         when (intent?.action) {
             ACTION_SHUTDOWN -> { // "Turn off" in the notification
-                LinkState.log("Turned off from the notification")
+                LinkState.log("Ride mode turned off from the notification")
                 prepareTurnOff(this)
                 stopSelf()
                 return START_NOT_STICKY
@@ -205,7 +205,7 @@ class LinkService : Service() {
             .setContentTitle("Dark's Ride")
             .setContentText(text)
             .setContentIntent(open)
-            .addAction(0, "Turn off", turnOff)
+            .addAction(0, "Turn off ride mode", turnOff)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -522,6 +522,13 @@ class LinkService : Service() {
         }
 
         /** Stopped by the rider: stays off until started again, even after a restart. */
+        /** Ride mode switched on: everything runs again, also after restarts. */
+        fun turnOn(c: Context) {
+            AppPrefs.setLinkEnabled(c, true)
+            PhoneListenerService.resume(c)
+            start(c)
+        }
+
         /**
          * The off switch: stops the link and music/message watching, and keeps it all off
          * (also after a phone restart) until the rider opens Dark's Ride again.

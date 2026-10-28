@@ -1,9 +1,6 @@
 package com.darksoul.darksride
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.Process
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -17,15 +14,15 @@ import com.darksoul.darksride.link.LinkService
 import com.darksoul.darksride.link.LinkState
 import com.darksoul.darksride.phone.PhoneListenerService
 import com.darksoul.darksride.ui.LinkScreen
+import com.darksoul.darksride.ui.MainShell
 import com.darksoul.darksride.ui.ModeChoiceScreen
 import com.darksoul.darksride.ui.theme.DarksRideTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (savedInstanceState == null) {
-            // Opening the app is the "on" switch: run again, and keep running after restarts.
-            AppPrefs.setLinkEnabled(this, true)
+        // Ride mode decides what runs in the background; opening the app doesn't change it.
+        if (savedInstanceState == null && AppPrefs.linkEnabled(this)) {
             PhoneListenerService.resume(this)
         }
         // Ride screen: a call can open the app over the lock screen and wake the display.
@@ -36,40 +33,31 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DarksRideTheme {
-                AppRoot(onTurnOff = ::turnOff)
+                AppRoot()
             }
         }
-    }
-
-    /** The off switch: stop everything, close the app, and end its process. */
-    private fun turnOff() {
-        LinkService.turnOff(this)
-        finishAndRemoveTask()
-        // Give the link a moment to close cleanly, then make sure nothing is left running.
-        Handler(Looper.getMainLooper()).postDelayed({ Process.killProcess(Process.myPid()) }, 700)
     }
 }
 
 @Composable
-fun AppRoot(onTurnOff: () -> Unit) {
+fun AppRoot() {
     val context = LocalContext.current
     var mode by remember { mutableStateOf(AppPrefs.mode(context)) }
 
-    when (val m = mode) {
+    val changeRole = {
+        LinkService.stop(context)
+        LinkState.clear()
+        AppPrefs.setMode(context, null)
+        mode = null
+    }
+
+    when (mode) {
         null -> ModeChoiceScreen(onPick = { picked ->
             AppPrefs.setMode(context, picked)
             AppPrefs.setLinkEnabled(context, true)
             mode = picked
         })
-        else -> LinkScreen(
-            mode = m,
-            onChangeRole = {
-                LinkService.stop(context)
-                LinkState.clear()
-                AppPrefs.setMode(context, null)
-                mode = null
-            },
-            onTurnOff = onTurnOff
-        )
+        AppMode.MAIN -> MainShell(onChangeRole = changeRole)
+        AppMode.RIDE -> LinkScreen(mode = AppMode.RIDE, onChangeRole = changeRole)
     }
 }

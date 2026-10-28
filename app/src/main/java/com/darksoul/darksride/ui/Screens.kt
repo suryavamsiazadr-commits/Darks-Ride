@@ -18,7 +18,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -75,7 +78,11 @@ fun ModeChoiceScreen(onPick: (AppMode) -> Unit) {
 // ---------- Screen 2: the link ----------
 
 @Composable
-fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
+fun LinkScreen(
+    mode: AppMode,
+    onChangeRole: () -> Unit,
+    insets: WindowInsets = WindowInsets.safeDrawing
+) {
     val context = LocalContext.current
     val adapter = remember { context.getSystemService(BluetoothManager::class.java)?.adapter }
 
@@ -95,17 +102,17 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
     var rideAddress by remember { mutableStateOf(AppPrefs.rideAddress(context)) }
     var rideName by remember { mutableStateOf(AppPrefs.rideName(context)) }
     var picking by remember { mutableStateOf(false) }
-    var userStopped by rememberSaveable { mutableStateOf(!AppPrefs.linkEnabled(context)) }
+    val rideOn by AppPrefs.rideMode(context).collectAsState()
 
-    // Start the link by itself once everything it needs is in place.
+    // With Ride mode on, start the link by itself once everything it needs is in place.
     val ready = hasAccess && bluetoothOn && (mode == AppMode.RIDE || rideAddress != null)
-    LaunchedEffect(ready) {
-        if (ready && !userStopped && LinkState.status.value == LinkStatus.STOPPED) {
+    LaunchedEffect(ready, rideOn) {
+        if (ready && rideOn && LinkState.status.value == LinkStatus.STOPPED) {
             LinkService.start(context)
         }
     }
 
-    RideColumn {
+    RideColumn(insets = insets) {
         Header(
             title = if (mode == AppMode.MAIN) "Main phone" else "Ride screen",
             status = if (ready) status else null,
@@ -140,7 +147,6 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
                         rideAddress = device.address
                         rideName = device.name
                         picking = false
-                        userStopped = false
                         if (LinkState.status.value != LinkStatus.STOPPED) LinkService.restart(context)
                         else LinkService.start(context)
                     },
@@ -149,6 +155,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
             }
 
             else -> {
+                RideModeCard(mode = mode, on = rideOn)
                 SetupCard(mode)
 
                 if (mode == AppMode.RIDE) {
@@ -162,23 +169,47 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
                     mode = mode,
                     status = status,
                     rideName = rideName,
-                    userStopped = userStopped,
+                    rideOn = rideOn,
                     onChangeRidePhone = { picking = true },
-                    onStart = {
-                        userStopped = false
-                        LinkService.start(context)
-                    }
+                    onStart = { LinkService.turnOn(context) }
                 )
                 AppearanceCard()
                 ActivityCard()
-
-                BigButton("Turn off Dark's Ride", secondary = true, onClick = onTurnOff)
-                Body("Stops everything on this phone and closes the app. It stays off, even " +
-                    "after a restart, until you open Dark's Ride again.", dim = true)
             }
         }
 
         TextButton(onClick = onChangeRole) { Text("Change this phone's role") }
+    }
+}
+
+/**
+ * Ride mode: the one switch for everything that runs in the background (Bluetooth link,
+ * music, messages, calls). Off stays off after restarts; the rest of the app still works.
+ */
+@Composable
+private fun RideModeCard(mode: AppMode, on: Boolean) {
+    val context = LocalContext.current
+    Card {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Ride mode", fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    if (on) {
+                        if (mode == AppMode.MAIN) "On: music, messages and calls go to the bike"
+                        else "On: showing what your main phone sends"
+                    } else "Off: nothing runs in the background",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
+            Switch(
+                checked = on,
+                onCheckedChange = { turnOn ->
+                    if (turnOn) LinkService.turnOn(context) else LinkService.turnOff(context)
+                }
+            )
+        }
     }
 }
 
@@ -188,7 +219,7 @@ private fun LinkCard(
     mode: AppMode,
     status: LinkStatus,
     rideName: String?,
-    userStopped: Boolean,
+    rideOn: Boolean,
     onChangeRidePhone: () -> Unit,
     onStart: () -> Unit
 ) {
@@ -208,7 +239,7 @@ private fun LinkCard(
                 TextButton(onClick = onChangeRidePhone) { Text("Change") }
             }
         }
-        if (status == LinkStatus.STOPPED) BigButton("Start link", onClick = onStart)
+        if (rideOn && status == LinkStatus.STOPPED) BigButton("Start link", onClick = onStart)
         BigButton(
             "Send test message",
             secondary = true,
@@ -219,7 +250,7 @@ private fun LinkCard(
             }
         )
         Body(
-            if (userStopped) "The link stays off until you start it."
+            if (!rideOn) "Ride mode is off: nothing runs in the background."
             else "Starts by itself after a phone restart. You don't need to open the app.",
             dim = true
         )
