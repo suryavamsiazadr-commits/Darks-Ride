@@ -13,3 +13,7 @@ val Go = Color(0xFF3DDC84)
 
 // Reject / end call.
 val Stop = Color(0xFFE5484D)
+
+// Light theme: deeper orange for contrast on white, near-black text.
+val EmberDeep = Color(0xFFD9570A)
+val Ink = Color(0xFF15161A)

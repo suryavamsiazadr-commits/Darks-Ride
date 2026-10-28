@@ -45,6 +45,12 @@ object RideMedia {
         )
     }
 
+    /** Volume buttons: show the new level straight away; the main phone confirms it shortly. */
+    fun nudgeVolume(delta: Int) {
+        val n = _now.value ?: return
+        _now.value = n.copy(volume = (n.volume + delta).coerceIn(0, n.volumeMax))
+    }
+
     fun clear() {
         _now.value = null
     }

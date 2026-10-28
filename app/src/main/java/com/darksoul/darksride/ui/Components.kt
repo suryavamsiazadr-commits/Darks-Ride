@@ -33,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +45,7 @@ import com.darksoul.darksride.AppMode
 import com.darksoul.darksride.AppPrefs
 import com.darksoul.darksride.link.LinkStatus
 import com.darksoul.darksride.ui.theme.Go
+import com.darksoul.darksride.ui.theme.LocalGlass
 
 // ---------- Page ----------
 
@@ -51,7 +54,9 @@ fun RideColumn(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(
+                Brush.verticalGradient(listOf(LocalGlass.current.backgroundTop, LocalGlass.current.backgroundBottom))
+            )
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
@@ -89,7 +94,7 @@ internal fun StatusPill(status: LinkStatus, peer: String?, mode: AppMode) {
         modifier = Modifier
             .padding(start = 12.dp)
             .clip(shape)
-            .background(colors.surface)
+            .background(LocalGlass.current.card)
             .border(1.dp, dot.copy(alpha = 0.6f), shape)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -121,7 +126,15 @@ internal fun BigButton(
             Text(text, fontSize = 17.sp)
         }
     } else {
-        Button(onClick = onClick, enabled = enabled, shape = shape, modifier = modifier) {
+        // Main buttons get a soft orange glow underneath.
+        val glow = LocalGlass.current.glow
+        Button(
+            onClick = onClick, enabled = enabled, shape = shape,
+            modifier = modifier.shadow(
+                elevation = if (enabled) 14.dp else 0.dp, shape = shape,
+                ambientColor = glow, spotColor = glow
+            )
+        ) {
             Text(text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         }
     }
@@ -149,13 +162,15 @@ internal fun Body(text: String, dim: Boolean = false) = Text(
 
 @Composable
 internal fun Card(onClick: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
-    val shape = RoundedCornerShape(20.dp)
-    val colors = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(22.dp)
+    val glass = LocalGlass.current
+    // Glass-lite: translucent body, light catching the top, a thin edge brighter at the top.
     var modifier = Modifier
         .fillMaxWidth()
         .clip(shape)
-        .background(colors.surface)
-        .border(1.dp, colors.primary.copy(alpha = 0.35f), shape)
+        .background(glass.card)
+        .background(Brush.verticalGradient(0f to glass.cardHighlight, 0.45f to Color.Transparent))
+        .border(1.dp, Brush.verticalGradient(listOf(glass.cardBorderTop, glass.cardBorderBottom)), shape)
     if (onClick != null) modifier = modifier.clickable(onClick = onClick)
     Column(
         modifier = modifier.padding(18.dp),

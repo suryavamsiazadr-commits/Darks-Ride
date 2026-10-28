@@ -131,7 +131,7 @@ private fun CallButton(
             .height(height)
             .clip(RoundedCornerShape(24.dp))
             .background(color)
-            .clickable(onClickLabel = label, onClick = onClick),
+            .rideTap(onTap = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(label, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)

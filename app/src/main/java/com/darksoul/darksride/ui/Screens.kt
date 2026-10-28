@@ -169,6 +169,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
                         LinkService.start(context)
                     }
                 )
+                AppearanceCard()
                 ActivityCard()
 
                 BigButton("Turn off Dark's Ride", secondary = true, onClick = onTurnOff)

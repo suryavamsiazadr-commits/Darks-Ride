@@ -99,8 +99,9 @@ class MediaRelay(
                     AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0
                 )
             }
-            // Volume has no change callback, so report the new state shortly after.
-            handler.postDelayed({ publish(force = false) }, 400)
+            // Volume has no change callback: report it right away. Track changes report themselves.
+            if (action.startsWith("vol")) publish(force = false)
+            else handler.postDelayed({ publish(force = false) }, 400)
         }
     }
 

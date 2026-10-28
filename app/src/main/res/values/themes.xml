@@ -3,5 +3,9 @@
 
     <style name="Theme.DarksRide" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">#FF0B0B0E</item>
+        <!-- Launch screen: the Dark's Ride icon on night black for a moment while loading -->
+        <item name="android:windowSplashScreenBackground">#FF0B0B0E</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#FF141726</item>
     </style>
 </resources>

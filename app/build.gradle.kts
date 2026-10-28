@@ -35,6 +35,8 @@ android {
             signingConfig = signingConfigs.getByName("shared")
         }
         release {
+            // Optimised build for real rides (much smoother than debug), same shared key.
+            signingConfig = signingConfigs.getByName("shared")
             optimization {
                 enable = true
                 packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")

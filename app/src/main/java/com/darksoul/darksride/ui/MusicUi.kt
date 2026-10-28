@@ -106,13 +106,19 @@ fun NowPlayingCard() {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ControlButton(R.drawable.ic_volume_down, "Volume down", size = 60.dp) { send("vol_down") }
+            ControlButton(R.drawable.ic_volume_down, "Volume down", size = 64.dp, repeat = true) {
+                RideMedia.nudgeVolume(-1) // show the new level at once
+                send("vol_down")
+            }
             Text(
                 if (n == null) "Volume" else "Volume ${n.volume} / ${n.volumeMax}",
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
             )
-            ControlButton(R.drawable.ic_volume_up, "Volume up", size = 60.dp) { send("vol_up") }
+            ControlButton(R.drawable.ic_volume_up, "Volume up", size = 64.dp, repeat = true) {
+                RideMedia.nudgeVolume(+1)
+                send("vol_up")
+            }
         }
     }
 }
@@ -177,6 +183,7 @@ private fun ControlButton(
     label: String,
     size: Dp,
     main: Boolean = false,
+    repeat: Boolean = false,
     onClick: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
@@ -184,8 +191,8 @@ private fun ControlButton(
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .background(if (main) colors.primary else Color.White.copy(alpha = 0.08f))
-            .clickable(onClickLabel = label, onClick = onClick),
+            .background(if (main) colors.primary else colors.onSurface.copy(alpha = 0.08f))
+            .rideTap(repeat = repeat, onTap = onClick),
         contentAlignment = Alignment.Center
     ) {
         Icon(

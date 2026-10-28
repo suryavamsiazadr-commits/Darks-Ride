@@ -1,5 +1,6 @@
 package com.darksoul.darksride.overlay
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
@@ -14,6 +15,8 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.view.Display
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Chronometer
@@ -22,6 +25,7 @@ import android.widget.TextView
 import com.darksoul.darksride.link.LinkService
 import com.darksoul.darksride.phone.CallInfo
 import com.darksoul.darksride.phone.RideNotif
+import com.darksoul.darksride.ui.theme.ThemeController
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -32,6 +36,7 @@ import java.util.Locale
  * - a message banner for 8 seconds.
  * Needs "Display over other apps". Without it, the app falls back to notifications.
  */
+@SuppressLint("ClickableViewAccessibility") // ride buttons fire on touch-down on purpose
 object RideOverlay {
     private const val MESSAGE_SECONDS = 8_000L
     private const val MAX_WIDTH_DP = 640
@@ -45,12 +50,15 @@ object RideOverlay {
     private val hideMessage = Runnable { removeMessage() }
 
     // Palette (matches the app theme)
-    private val SURFACE = 0xF216161B.toInt()
+    // Card colours follow the app's light / dark theme (light sensor in Auto).
+    private val dark: Boolean get() = ThemeController.isDark.value
+    private val SURFACE: Int get() = if (dark) 0xF01C1F2B.toInt() else 0xF7FFFFFF.toInt()
+    private val TEXT: Int get() = if (dark) 0xFFFFFFFF.toInt() else 0xFF15161A.toInt()
+    private val SUBTLE: Int get() = if (dark) 0xB3FFFFFF.toInt() else 0x9915161A.toInt()
     private val EMBER = 0xFFFF7A1A.toInt()
     private val GO = 0xFF3DDC84.toInt()
     private val STOP = 0xFFE5484D.toInt()
     private val WHITE = 0xFFFFFFFF.toInt()
-    private val DIM = 0xB3FFFFFF.toInt()
 
     fun canShow(c: Context): Boolean = Settings.canDrawOverlays(c)
 
@@ -101,7 +109,7 @@ object RideOverlay {
     private fun ringingCard(ctx: Context, app: Context, call: CallInfo): View =
         card(ctx, borderColor = GO).apply {
             addView(label(ctx, "Incoming call · ${call.app}", EMBER, 16f, bold = true))
-            addView(label(ctx, call.caller, WHITE, 30f, bold = true))
+            addView(label(ctx, call.caller, TEXT, 30f, bold = true))
             addView(LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, dp(ctx, 16), 0, 0)
@@ -118,9 +126,9 @@ object RideOverlay {
             gravity = Gravity.CENTER_VERTICAL
             addView(LinearLayout(ctx).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(label(ctx, call.caller, WHITE, 22f, bold = true))
+                addView(label(ctx, call.caller, TEXT, 22f, bold = true))
                 addView(Chronometer(ctx).apply {
-                    setTextColor(DIM)
+                    setTextColor(SUBTLE)
                     textSize = 18f
                     base = SystemClock.elapsedRealtime() - (System.currentTimeMillis() - call.since)
                     start()
@@ -135,8 +143,8 @@ object RideOverlay {
         card(ctx, borderColor = EMBER).apply {
             val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(n.time))
             addView(label(ctx, "${n.app} · $time", EMBER, 15f, bold = true))
-            addView(label(ctx, n.title, WHITE, 22f, bold = true))
-            addView(label(ctx, n.text, WHITE, 18f, bold = false, lines = 2))
+            addView(label(ctx, n.title, TEXT, 22f, bold = true))
+            addView(label(ctx, n.text, TEXT, 18f, bold = false, lines = 2))
             setOnClickListener { removeMessage() }
         }
 
@@ -177,7 +185,14 @@ object RideOverlay {
             cornerRadius = dp(ctx, 20).toFloat()
         }
         isClickable = true
-        setOnClickListener { onClick() }
+        // React on touch-down (not on lift) with a vibration tick: easier with gloves.
+        setOnTouchListener { v, event ->
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                onClick()
+            }
+            true
+        }
     }
 
     private fun weighted(ctx: Context, startMarginDp: Int = 0, endMarginDp: Int = 0) =

@@ -28,7 +28,7 @@ jobs:
         run: |
           set -o pipefail
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee build.log
+          ./gradlew assembleDebug assembleRelease --stacktrace 2>&1 | tee build.log
 
       - name: Show build errors
         if: failure()
@@ -39,7 +39,9 @@ jobs:
           done
 
       - name: Name the APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk "DarksRide-${GITHUB_REF_NAME//\//-}.apk"
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk "DarksRide-${GITHUB_REF_NAME//\//-}.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "DarksRide-${GITHUB_REF_NAME//\//-}-debug.apk"
 
       - uses: actions/upload-artifact@v4
         with:
