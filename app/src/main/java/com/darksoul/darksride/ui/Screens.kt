@@ -208,7 +208,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
 
     RideColumn {
         Title(if (mode == AppMode.MAIN) "Main phone" else "Ride screen")
-        Body("Dark's Ride · step 7 · send to bike", dim = true)
+        Body("Dark's Ride · version 1", dim = true)
 
         when {
             adapter == null -> Body("This phone has no Bluetooth, so it cannot be used.")
@@ -246,9 +246,11 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
 
             else -> {
                 StatusCard(status = status, peer = peer, mode = mode)
+                SetupChecklist(mode)
 
                 if (mode == AppMode.RIDE) {
                     OverlayAccessCard()
+                    SmallScreenCard()
                 }
                 if (mode == AppMode.RIDE && status == LinkStatus.CONNECTED) {
                     RideContent()
@@ -311,7 +313,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
 }
 
 @Composable
-private fun StatusCard(status: LinkStatus, peer: String?, mode: AppMode) {
+internal fun StatusCard(status: LinkStatus, peer: String?, mode: AppMode) {
     val (label, dot) = when (status) {
         LinkStatus.CONNECTED -> "Connected to ${peer ?: "your phone"}" to Go
         LinkStatus.CONNECTING -> "Connecting…" to MaterialTheme.colorScheme.primary

@@ -27,7 +27,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Floating cards drawn on top of other apps (Google Maps) on the ride phone's main screen:
+ * Floating cards drawn at the top of the ride phone's main screen, over other apps (Google Maps):
  * - a call card with Answer / Reject (or a slim "on call" bar with End call),
  * - a message banner for 8 seconds.
  * Needs "Display over other apps". Without it, the app falls back to notifications.
@@ -68,7 +68,7 @@ object RideOverlay {
             removeCall()
             val ctx = context(app) ?: return@post
             val view = if (call.ringing) ringingCard(ctx, app, call) else onCallBar(ctx, app, call)
-            callView = add(ctx, view, bottomMarginDp = 24)
+            callView = add(ctx, view, topMarginDp = 44)
         }
     }
 
@@ -84,7 +84,7 @@ object RideOverlay {
             if (!canShow(app) || callView != null) return@post
             removeMessage()
             val ctx = context(app) ?: return@post
-            messageView = add(ctx, messageCard(ctx, n), bottomMarginDp = 24)
+            messageView = add(ctx, messageCard(ctx, n), topMarginDp = 44)
             main.postDelayed(hideMessage, MESSAGE_SECONDS)
         }
     }
@@ -202,7 +202,7 @@ object RideOverlay {
         }
     }
 
-    private fun add(ctx: Context, view: View, bottomMarginDp: Int): View? {
+    private fun add(ctx: Context, view: View, topMarginDp: Int): View? {
         val wm = windows ?: return null
         val screenWidth = ctx.resources.displayMetrics.widthPixels
         val width = minOf(screenWidth - dp(ctx, 24), dp(ctx, MAX_WIDTH_DP))
@@ -215,8 +215,9 @@ object RideOverlay {
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            y = dp(ctx, bottomMarginDp)
+            // Top of the screen, just below the status bar, like a normal notification.
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            y = dp(ctx, topMarginDp)
         }
         return runCatching { wm.addView(view, params); view }.getOrNull()
     }

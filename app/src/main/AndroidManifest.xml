@@ -53,12 +53,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- Test page for the LG Wing's second screen -->
+        <!-- Ride panel on a second screen (LG Wing's small screen in Swivel mode) -->
         <activity
-            android:name=".SecondScreenActivity"
+            android:name=".panel.RidePanelActivity"
             android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
             android:resizeableActivity="true"
-            android:taskAffinity="com.darksoul.darksride.second"
+            android:taskAffinity="com.darksoul.darksride.panel"
             android:theme="@style/Theme.DarksRide" />
 
         <!-- "Send to bike" in the share menu: places from Google Maps / WhatsApp -->

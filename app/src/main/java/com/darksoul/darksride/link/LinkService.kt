@@ -13,6 +13,10 @@ import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.hardware.display.DisplayManager
+import android.os.Handler
+import android.os.Looper
+import android.view.Display
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -27,6 +31,7 @@ import com.darksoul.darksride.media.RideMedia
 import com.darksoul.darksride.nav.Destination
 import com.darksoul.darksride.nav.RideNav
 import com.darksoul.darksride.overlay.RideOverlay
+import com.darksoul.darksride.panel.RidePanel
 import com.darksoul.darksride.phone.CallRelay
 import com.darksoul.darksride.phone.NotifyBridge
 import com.darksoul.darksride.phone.PhoneListenerService
@@ -77,6 +82,10 @@ class LinkService : Service() {
 
     /** Main phone only: follows calls and answers / rejects them for the ride screen. */
     @Volatile private var callRelay: CallRelay? = null
+
+    /** Ride screen only: opens the ride panel when a second screen appears (Wing swivel). */
+    private var displayListener: DisplayManager.DisplayListener? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -151,6 +160,9 @@ class LinkService : Service() {
         closeSockets()
         mediaRelay?.stop()
         mediaRelay = null
+        displayListener?.let { getSystemService(DisplayManager::class.java).unregisterDisplayListener(it) }
+        displayListener = null
+        mainHandler.removeCallbacksAndMessages(null)
         callRelay?.stop()
         callRelay = null
         RideCall.clear(this)
@@ -233,6 +245,19 @@ class LinkService : Service() {
         }
         callRelay?.ensureStarted()
         mediaRelay?.ensureStarted()
+        if (AppPrefs.mode(this) == AppMode.RIDE && displayListener == null) {
+            val listener = object : DisplayManager.DisplayListener {
+                override fun onDisplayAdded(displayId: Int) {
+                    if (displayId == Display.DEFAULT_DISPLAY) return
+                    // Give the new screen a moment to settle before opening on it.
+                    mainHandler.postDelayed({ RidePanel.autoOpen(this@LinkService) }, 1_500)
+                }
+                override fun onDisplayRemoved(displayId: Int) = Unit
+                override fun onDisplayChanged(displayId: Int) = Unit
+            }
+            getSystemService(DisplayManager::class.java).registerDisplayListener(listener, mainHandler)
+            displayListener = listener
+        }
         loopJob = scope.launch {
             if (restart) old?.cancelAndJoin()
             val adapter = getSystemService(BluetoothManager::class.java)?.adapter
@@ -358,6 +383,7 @@ class LinkService : Service() {
         }
         callRelay?.ensureStarted()
         callRelay?.refresh()
+        if (myRole == "ride") mainHandler.post { RidePanel.autoOpen(this@LinkService) }
 
         val heartbeat = launch {
             while (isActive) {

@@ -19,7 +19,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // One shared key, so APKs built in Android Studio and on GitHub install over each other.
+    // Personal, non-commercial app: the key lives in the (private) repo on purpose.
+    signingConfigs {
+        create("shared") {
+            storeFile = file("darksride.jks")
+            storePassword = "darksride"
+            keyAlias = "darksride"
+            keyPassword = "darksride"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("shared")
+        }
         release {
             optimization {
                 enable = true
