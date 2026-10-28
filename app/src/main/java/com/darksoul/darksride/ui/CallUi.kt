@@ -180,3 +180,27 @@ fun OverlayAccessCard() {
         launcher.launch(RideOverlay.permissionIntent(context))
     })
 }
+
+// ---------- Main phone: let WhatsApp calls be answered from the bike ----------
+
+@Composable
+fun AppCallAnswerCard() {
+    val context = LocalContext.current
+    var allowed by remember { mutableStateOf(RideOverlay.canShow(context)) }
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { allowed = RideOverlay.canShow(context) }
+
+    if (allowed) {
+        Body("Answer WhatsApp calls from the bike: on", dim = true)
+        return
+    }
+    Card {
+        Body("To answer WhatsApp calls from the bike, Android needs Dark's Ride to be " +
+            "allowed to \"Display over other apps\" on this phone. Nothing is shown here; " +
+            "it only lets WhatsApp's call screen open.")
+    }
+    BigButton("Allow for WhatsApp calls", secondary = true, onClick = {
+        launcher.launch(RideOverlay.permissionIntent(context))
+    })
+}

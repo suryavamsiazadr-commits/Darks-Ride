@@ -260,6 +260,7 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
                         TextButton(onClick = { picking = true }) { Text("Change") }
                     }
                     CallAccessCard()
+                    AppCallAnswerCard()
                     MusicAccessCard()
                     NotificationFilterCard()
                 }

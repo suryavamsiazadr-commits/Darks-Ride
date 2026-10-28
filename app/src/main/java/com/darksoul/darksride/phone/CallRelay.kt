@@ -127,7 +127,13 @@ class CallRelay(
         }
 
         // A call in another app: ringing while it offers "Answer", otherwise in progress.
-        val ringing = n.actions.orEmpty().any { matches(it, ANSWER_WORDS) }
+        val callType = n.extras.getInt(Notification.EXTRA_CALL_TYPE, 0)
+        val ringing = when (callType) {
+            Notification.CallStyle.CALL_TYPE_INCOMING -> true
+            Notification.CallStyle.CALL_TYPE_ONGOING -> false
+            else -> styleIntent(n, Notification.EXTRA_ANSWER_INTENT) != null ||
+                n.actions.orEmpty().any { matches(it, ANSWER_WORDS) }
+        }
         val newState = if (ringing) State.RINGING else State.ACTIVE
         if (appState == State.IDLE && newState == State.RINGING) rejectedByRider = false
         handler.removeCallbacks(appCallEnded)
@@ -233,10 +239,14 @@ class CallRelay(
                 telecom.acceptRingingCall()
                 true
             }.getOrDefault(false)
-            if (!done) press(dialerNotification, ANSWER_WORDS)
+            if (!done) press(dialerNotification, Button.ANSWER)
             return
         }
-        if (appState == State.RINGING) press(appNotification, ANSWER_WORDS)
+        if (appState == State.RINGING) {
+            if (!press(appNotification, Button.ANSWER)) {
+                LinkState.log("Could not find $appName's Answer button")
+            }
+        }
     }
 
     private fun hangUp() {
@@ -246,34 +256,65 @@ class CallRelay(
                 telecom.endCall()
             }.getOrDefault(false)
             if (!done) {
-                press(dialerNotification, DECLINE_WORDS + HANG_UP_WORDS)
+                press(dialerNotification, Button.DECLINE) || press(dialerNotification, Button.HANG_UP)
             }
             return
         }
         if (appState != State.IDLE) {
-            val words = if (appState == State.RINGING) DECLINE_WORDS else HANG_UP_WORDS
-            press(appNotification, words)
+            val first = if (appState == State.RINGING) Button.DECLINE else Button.HANG_UP
+            val second = if (first == Button.DECLINE) Button.HANG_UP else Button.DECLINE
+            if (!press(appNotification, first) && !press(appNotification, second)) {
+                LinkState.log("Could not find $appName's ${first.label} button")
+            }
         }
     }
 
-    /** Presses the matching button on a call notification. */
-    private fun press(n: Notification?, words: List<String>): Boolean {
-        val action = n?.actions.orEmpty().firstOrNull { matches(it, words) } ?: return false
-        return try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                val options = ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
-                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-                )
-                action.actionIntent.send(context, 0, null, null, null, null, options.toBundle())
-            } else {
-                action.actionIntent.send()
-            }
-            true
-        } catch (e: PendingIntent.CanceledException) {
-            false
-        } catch (e: SecurityException) {
-            false
+    /** The three buttons a call notification can have. */
+    private enum class Button(val label: String, val extraKey: String, val words: List<String>) {
+        ANSWER("Answer", Notification.EXTRA_ANSWER_INTENT, ANSWER_WORDS),
+        DECLINE("Decline", Notification.EXTRA_DECLINE_INTENT, DECLINE_WORDS),
+        HANG_UP("Hang up", Notification.EXTRA_HANG_UP_INTENT, HANG_UP_WORDS)
+    }
+
+    /**
+     * Presses a button on a call notification. Apps like WhatsApp use Android's "call style",
+     * which keeps Answer / Decline / Hang up in the notification's extras rather than as
+     * normal buttons, so look there first.
+     */
+    private fun press(n: Notification?, button: Button): Boolean {
+        if (n == null) return false
+        val intent = styleIntent(n, button.extraKey)
+            ?: n.actions.orEmpty().firstOrNull { matches(it, button.words) }?.actionIntent
+            ?: return false
+        return fire(intent)
+    }
+
+    private fun styleIntent(n: Notification, key: String): PendingIntent? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            n.extras.getParcelable(key, PendingIntent::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            n.extras.getParcelable(key) as? PendingIntent
         }
+
+    /**
+     * Sends the app's button. Answering usually opens the app's call screen, which Android
+     * only allows from the background when Dark's Ride may "Display over other apps".
+     */
+    private fun fire(intent: PendingIntent): Boolean = try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val options = ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+            )
+            intent.send(context, 0, null, null, null, null, options.toBundle())
+        } else {
+            intent.send()
+        }
+        true
+    } catch (e: PendingIntent.CanceledException) {
+        false
+    } catch (e: SecurityException) {
+        false
     }
 
     private fun matches(action: Notification.Action, words: List<String>): Boolean {
