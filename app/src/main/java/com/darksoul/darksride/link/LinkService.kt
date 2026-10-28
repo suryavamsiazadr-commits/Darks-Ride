@@ -444,6 +444,11 @@ class LinkService : Service() {
                 LinkState.log("Message: ${msg.optString("title")} (${msg.optString("app")})")
             }
             "notif_gone" -> RideNotifications.remove(msg.optString("id"))
+            "notif_clear" -> {                                  // main phone
+                val ids = msg.optJSONArray("ids")
+                val keys = (0 until (ids?.length() ?: 0)).map { i -> ids!!.optString(i) }
+                PhoneListenerService.dismiss(keys)
+            }
         }
     }
 
@@ -552,6 +557,11 @@ class LinkService : Service() {
         fun commandIntent(c: Context, action: String): Intent {
             val json = JSONObject().put("t", "cmd").put("a", action).toString()
             return intent(c, ACTION_SEND).putExtra(EXTRA_JSON, json)
+        }
+
+        /** Sends any message to the other phone (if the link is running). */
+        fun sendJson(c: Context, json: JSONObject) {
+            c.startService(intent(c, ACTION_SEND).putExtra(EXTRA_JSON, json.toString()))
         }
 
         /** Main phone: a place shared with "Send to bike". */

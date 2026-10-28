@@ -2,6 +2,7 @@ package com.darksoul.darksride.ui
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,8 +18,15 @@ fun DestinationCard() {
     val context = LocalContext.current
     val last by RideNav.last.collectAsState()
     val d = last ?: return
-    Card {
-        Text("Destination from your main phone", fontSize = 14.sp,
+    CollapsibleCard(
+        title = "Destination",
+        stateKey = "destination",
+        summary = d.name,
+        trailing = { open ->
+            if (!open) TextButton(onClick = { RideNav.navigate(context, d) }) { Text("Navigate") }
+        }
+    ) {
+        Text("From your main phone", fontSize = 14.sp,
             color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
         Text(d.name, fontSize = 22.sp, fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface, maxLines = 2,
@@ -27,6 +35,6 @@ fun DestinationCard() {
             Text(it, fontSize = 15.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
         }
+        BigButton("Navigate", onClick = { RideNav.navigate(context, d) })
     }
-    BigButton("Navigate", onClick = { RideNav.navigate(context, d) })
 }

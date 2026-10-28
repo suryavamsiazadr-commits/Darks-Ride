@@ -54,8 +54,28 @@ fun NowPlayingCard() {
     val now by RideMedia.now.collectAsState()
     val send = { action: String -> LinkService.sendCommand(context, action) }
 
-    Card {
-        val n = now
+    val n = now
+    val summary = when {
+        n == null -> "Waiting for music info"
+        n.nothingPlaying -> "Nothing playing"
+        else -> listOf(n.title, n.artist).filter { it.isNotEmpty() }.joinToString(" · ")
+    }
+    CollapsibleCard(
+        title = "Music",
+        stateKey = "music",
+        summary = summary,
+        // While closed, a small play/pause stays in the title row.
+        trailing = { open ->
+            if (!open) {
+                ControlButton(
+                    if (n?.playing == true) R.drawable.ic_pause else R.drawable.ic_play,
+                    if (n?.playing == true) "Pause" else "Play",
+                    size = 48.dp,
+                    main = true
+                ) { send("toggle") }
+            }
+        }
+    ) {
         if (n == null) {
             Body("Waiting for music info from the main phone…", dim = true)
         } else {
@@ -175,37 +195,3 @@ private fun ControlButton(
         )
     }
 }
-
-// ---------- Main phone: music access ----------
-
-@Composable
-fun MusicAccessCard() {
-    val context = LocalContext.current
-    var allowed by remember { mutableStateOf(PhoneListenerService.hasAccess(context)) }
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { allowed = PhoneListenerService.hasAccess(context) }
-
-    if (allowed) {
-        Body("Music and messages access: on", dim = true)
-        return
-    }
-    Card {
-        Body("To control music and see messages on the bike, turn on notification access for Dark's Ride.")
-        Body("If the switch is greyed out: open App info for Dark's Ride, tap ⋮ (top right), " +
-            "choose \"Allow restricted settings\", then try again.", dim = true)
-    }
-    BigButton("Allow notification access", onClick = {
-        try {
-            launcher.launch(listenerDetailIntent(context))
-        } catch (e: ActivityNotFoundException) {
-            launcher.launch(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-        }
-    })
-}
-
-private fun listenerDetailIntent(c: Context): Intent =
-    Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).putExtra(
-        Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
-        PhoneListenerService.component(c).flattenToString()
-    )

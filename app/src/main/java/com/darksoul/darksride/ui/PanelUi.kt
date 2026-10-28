@@ -43,9 +43,12 @@ fun SmallScreenCard() {
     }
 
     if (!hasSecond) return
-    Card {
-        Text("Small screen", fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface)
+    CollapsibleCard(
+        title = "Small screen",
+        stateKey = "small_screen",
+        defaultOpen = false,
+        summary = if (auto) "Ride panel opens by itself" else "Ride panel opens with the button"
+    ) {
         Body("Keep Google Maps on the big screen and the ride panel (music, messages, " +
             "calls, destination) on the small one.", dim = true)
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -56,6 +59,6 @@ fun SmallScreenCard() {
                 AppPrefs.setFlag(context, AppPrefs.PANEL_AUTO, it)
             })
         }
+        BigButton("Open ride panel on small screen", onClick = { RidePanel.open(context) })
     }
-    BigButton("Open ride panel on small screen", onClick = { RidePanel.open(context) })
 }

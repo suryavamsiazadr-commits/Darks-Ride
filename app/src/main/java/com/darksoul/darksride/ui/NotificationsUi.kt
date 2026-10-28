@@ -73,32 +73,49 @@ fun MessagePopup() {
     }
 }
 
-/** Recent messages from the main phone. */
+/**
+ * Recent messages from the main phone. Tap one to dismiss it, or Clear for all:
+ * both also clear the notification on the main phone.
+ */
 @Composable
 fun MessagesCard() {
+    val context = LocalContext.current
     val items by RideNotifications.items.collectAsState()
-    Card {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Messages", fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+    CollapsibleCard(
+        title = "Messages",
+        stateKey = "messages",
+        summary = when (items.size) {
+            0 -> "No new messages"
+            1 -> "1 new: ${items.first().title}"
+            else -> "${items.size} new · latest: ${items.first().title}"
+        },
+        trailing = { _ ->
             if (items.isNotEmpty()) {
-                TextButton(onClick = { RideNotifications.clear() }) { Text("Clear") }
+                TextButton(onClick = { RideNotifications.clearEverywhere(context) }) { Text("Clear") }
             }
         }
+    ) {
         if (items.isEmpty()) {
             Body("No new messages", dim = true)
+        } else {
+            Body("Tap a message to dismiss it here and on your main phone.", dim = true)
         }
         items.take(5).forEachIndexed { i, n ->
             if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-            MessageRow(n)
+            MessageRow(n, onDismiss = { RideNotifications.dismissEverywhere(context, n.id) })
         }
     }
 }
 
 @Composable
-private fun MessageRow(n: RideNotif) {
+private fun MessageRow(n: RideNotif, onDismiss: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onDismiss)
+            .padding(vertical = 6.dp)
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(n.title, fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
                 color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -114,9 +131,12 @@ private fun MessageRow(n: RideNotif) {
 
 @Composable
 fun NotificationFilterCard() {
-    Card {
-        Text("Notifications on the bike", fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface)
+    CollapsibleCard(
+        title = "Notifications on the bike",
+        stateKey = "notif_filter",
+        defaultOpen = false,
+        summary = "Choose which apps show on the bike"
+    ) {
         FlagRow("WhatsApp", AppPrefs.NOTIFY_WHATSAPP)
         FlagRow("SMS / Messages", AppPrefs.NOTIFY_SMS)
         FlagRow("All other apps", AppPrefs.NOTIFY_OTHER)

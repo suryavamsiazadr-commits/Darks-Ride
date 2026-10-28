@@ -137,6 +137,14 @@ class PhoneListenerService : NotificationListenerService() {
             if (hasAccess(c)) runCatching { NotificationListenerService.requestRebind(component(c)) }
         }
 
+        /** Cleared on the bike: remove these notifications from this phone too. */
+        fun dismiss(keys: List<String>) {
+            val service = instance ?: return
+            service.handler.post {
+                keys.forEach { key -> runCatching { service.cancelNotification(key) } }
+            }
+        }
+
         /** Called by the link when the bike connects. Safe from any thread. */
         fun resendToBike() {
             val service = instance ?: return

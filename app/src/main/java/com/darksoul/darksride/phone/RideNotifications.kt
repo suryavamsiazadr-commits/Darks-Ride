@@ -4,6 +4,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import android.content.Context
+import com.darksoul.darksride.link.LinkService
+import org.json.JSONArray
 import org.json.JSONObject
 
 /** One message shown on the ride screen. */
@@ -51,6 +54,25 @@ object RideNotifications {
     fun remove(id: String) {
         _items.update { list -> list.filterNot { it.id == id } }
         if (_popup.value?.id == id) _popup.value = null
+    }
+
+    /** Tapped on the ride screen: gone here and on the main phone. */
+    fun dismissEverywhere(c: Context, id: String) {
+        remove(id)
+        tellMainPhone(c, listOf(id))
+    }
+
+    /** "Clear" on the ride screen: all gone here and on the main phone. */
+    fun clearEverywhere(c: Context) {
+        val ids = _items.value.map { it.id }
+        clear()
+        tellMainPhone(c, ids)
+    }
+
+    private fun tellMainPhone(c: Context, ids: List<String>) {
+        val keys = ids.filterNot { it.startsWith("local-") } // missed calls etc. exist only here
+        if (keys.isEmpty()) return
+        LinkService.sendJson(c, JSONObject().put("t", "notif_clear").put("ids", JSONArray(keys)))
     }
 
     fun dismissPopup(id: String) {

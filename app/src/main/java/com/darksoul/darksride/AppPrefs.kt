@@ -85,6 +85,14 @@ object AppPrefs {
         return if (age <= PENDING_NAV_MAX_AGE) text else null
     }
 
+    // ---- Which cards are open on screen ----
+    fun cardOpen(c: Context, key: String, default: Boolean): Boolean =
+        prefs(c).getBoolean("card_$key", default)
+
+    fun setCardOpen(c: Context, key: String, open: Boolean) = prefs(c).edit {
+        putBoolean("card_$key", open)
+    }
+
     /** Everything the link needs to start without the rider opening the app. */
     fun readyToLink(c: Context): Boolean {
         val mode = mode(c) ?: return false

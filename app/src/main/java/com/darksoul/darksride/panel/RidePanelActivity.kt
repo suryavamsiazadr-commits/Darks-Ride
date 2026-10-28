@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,7 +21,7 @@ import com.darksoul.darksride.link.LinkState
 import com.darksoul.darksride.link.LinkStatus
 import com.darksoul.darksride.ui.RideColumn
 import com.darksoul.darksride.ui.RideContent
-import com.darksoul.darksride.ui.StatusCard
+import com.darksoul.darksride.ui.Header
 import com.darksoul.darksride.ui.theme.DarksRideTheme
 
 /** The ride panel shown on the second screen: calls, destination, music and messages. */
@@ -44,17 +45,11 @@ private fun PanelScreen(onClose: () -> Unit) {
 
     RideColumn {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "Dark's Ride", fontSize = 22.sp, fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f)
-            )
+            Box(modifier = Modifier.weight(1f)) {
+                Header(title = "Dark's Ride", status = status, peer = peer, mode = AppMode.RIDE)
+            }
             TextButton(onClick = onClose) { Text("Close") }
         }
-        if (status == LinkStatus.CONNECTED) {
-            RideContent()
-        } else {
-            StatusCard(status = status, peer = peer, mode = AppMode.RIDE)
-        }
+        if (status == LinkStatus.CONNECTED) RideContent()
     }
 }
