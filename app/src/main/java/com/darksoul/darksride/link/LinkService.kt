@@ -81,7 +81,18 @@ class LinkService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Turned off by the rider: never come back by itself (e.g. Android restarting us).
+        if (intent == null && !AppPrefs.linkEnabled(this)) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         when (intent?.action) {
+            ACTION_SHUTDOWN -> { // "Turn off" in the notification
+                LinkState.log("Turned off from the notification")
+                prepareTurnOff(this)
+                stopSelf()
+                return START_NOT_STICKY
+            }
             ACTION_SEND -> {
                 if (loopJob?.isActive == true) {
                     val json = intent.getStringExtra(EXTRA_JSON)
@@ -151,11 +162,16 @@ class LinkService : Service() {
             this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+        val turnOff = PendingIntent.getService(
+            this, 1, intent(this, ACTION_SHUTDOWN),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_ride)
             .setContentTitle("Dark's Ride")
             .setContentText(text)
             .setContentIntent(open)
+            .addAction(0, "Turn off", turnOff)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -397,6 +413,7 @@ class LinkService : Service() {
         private const val ACTION_START = "com.darksoul.darksride.START"
         private const val ACTION_RESTART = "com.darksoul.darksride.RESTART"
         private const val ACTION_SEND = "com.darksoul.darksride.SEND"
+        private const val ACTION_SHUTDOWN = "com.darksoul.darksride.SHUTDOWN"
         private const val EXTRA_TEXT = "text"
         private const val EXTRA_REASON = "reason"
         private const val EXTRA_JSON = "json"
@@ -416,6 +433,20 @@ class LinkService : Service() {
         }
 
         /** Stopped by the rider: stays off until started again, even after a restart. */
+        /**
+         * The off switch: stops the link and music/message watching, and keeps it all off
+         * (also after a phone restart) until the rider opens Dark's Ride again.
+         */
+        fun turnOff(c: Context) {
+            prepareTurnOff(c)
+            c.stopService(Intent(c, LinkService::class.java))
+        }
+
+        private fun prepareTurnOff(c: Context) {
+            AppPrefs.setLinkEnabled(c, false)
+            PhoneListenerService.pause()
+        }
+
         fun stop(c: Context) {
             AppPrefs.setLinkEnabled(c, false)
             c.stopService(Intent(c, LinkService::class.java))

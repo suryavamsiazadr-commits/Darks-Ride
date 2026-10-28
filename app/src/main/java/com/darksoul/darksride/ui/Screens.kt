@@ -169,7 +169,7 @@ fun ModeChoiceScreen(onPick: (AppMode) -> Unit) {
 // ---------- Screen 2: the link ----------
 
 @Composable
-fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit) {
+fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
     val context = LocalContext.current
     val adapter = remember { context.getSystemService(BluetoothManager::class.java)?.adapter }
 
@@ -267,11 +267,6 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit) {
                         userStopped = false
                         LinkService.start(context)
                     })
-                } else {
-                    BigButton("Stop link", secondary = true, onClick = {
-                        userStopped = true
-                        LinkService.stop(context)
-                    })
                 }
 
                 BigButton(
@@ -299,6 +294,11 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit) {
                     dim = true
                 )
                 Body("Reconnects since start: $reconnects", dim = true)
+
+                BigButton("Turn off Dark's Ride", secondary = true, onClick = onTurnOff)
+                Body("Stops everything on this phone and closes the app. It stays off, even " +
+                    "after a restart, until you open Dark's Ride again.", dim = true)
+
                 ActivityLog(log)
             }
         }

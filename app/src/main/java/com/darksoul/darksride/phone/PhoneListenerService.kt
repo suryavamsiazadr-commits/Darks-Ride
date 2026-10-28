@@ -115,6 +115,17 @@ class PhoneListenerService : NotificationListenerService() {
         fun hasAccess(c: Context): Boolean =
             NotificationManagerCompat.getEnabledListenerPackages(c).contains(c.packageName)
 
+        /** Off switch: ask Android to stop running this listener until resume(). */
+        fun pause() {
+            val service = instance ?: return
+            service.handler.post { runCatching { service.requestUnbind() } }
+        }
+
+        /** App opened again: bring the listener back (only if access is granted). */
+        fun resume(c: Context) {
+            if (hasAccess(c)) runCatching { NotificationListenerService.requestRebind(component(c)) }
+        }
+
         /** Called by the link when the bike connects. Safe from any thread. */
         fun resendToBike() {
             val service = instance ?: return
