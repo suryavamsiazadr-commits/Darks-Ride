@@ -16,6 +16,8 @@
     <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
     <!-- Ride screen: show the call pop-up even when the screen is off -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Ride screen: floating call and message cards on top of Google Maps -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Start the link by itself after the phone restarts -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 

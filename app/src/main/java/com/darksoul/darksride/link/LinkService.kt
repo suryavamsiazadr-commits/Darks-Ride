@@ -24,6 +24,7 @@ import com.darksoul.darksride.MainActivity
 import com.darksoul.darksride.R
 import com.darksoul.darksride.media.MediaRelay
 import com.darksoul.darksride.media.RideMedia
+import com.darksoul.darksride.overlay.RideOverlay
 import com.darksoul.darksride.phone.CallRelay
 import com.darksoul.darksride.phone.NotifyBridge
 import com.darksoul.darksride.phone.PhoneListenerService
@@ -141,6 +142,7 @@ class LinkService : Service() {
         callRelay?.stop()
         callRelay = null
         RideCall.clear(this)
+        RideOverlay.hideAll()
         NotifyBridge.sink = null
         RideMedia.clear()
         RideNotifications.clear()
@@ -393,7 +395,7 @@ class LinkService : Service() {
             }
             "call" -> RideCall.update(this, msg)                // ride screen
             "notif" -> {                                        // ride screen
-                RideNotifications.add(msg)
+                RideOverlay.showMessage(this, RideNotifications.add(msg))
                 LinkState.log("Message: ${msg.optString("title")} (${msg.optString("app")})")
             }
             "notif_gone" -> RideNotifications.remove(msg.optString("id"))

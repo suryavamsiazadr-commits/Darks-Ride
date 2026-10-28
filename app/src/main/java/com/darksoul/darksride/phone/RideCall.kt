@@ -9,6 +9,7 @@ import androidx.core.app.NotificationCompat
 import com.darksoul.darksride.MainActivity
 import com.darksoul.darksride.R
 import com.darksoul.darksride.link.LinkService
+import com.darksoul.darksride.overlay.RideOverlay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,20 +35,31 @@ object RideCall {
         val now = System.currentTimeMillis()
         when (msg.optString("state")) {
             "ringing" -> {
-                _call.value = CallInfo(ringing = true, caller = caller, app = app, since = now)
-                CallAlert.showRinging(c, caller, app)
+                val info = CallInfo(ringing = true, caller = caller, app = app, since = now)
+                _call.value = info
+                // Floating card over Maps when allowed, otherwise a pop-up notification.
+                if (RideOverlay.canShow(c)) RideOverlay.showCall(c, info)
+                else CallAlert.showRinging(c, caller, app)
             }
             "active" -> {
                 val prev = _call.value
                 val since = if (prev != null && !prev.ringing) prev.since else now
-                _call.value = CallInfo(ringing = false, caller = caller, app = app, since = since)
-                CallAlert.showActive(c, caller, app)
+                val info = CallInfo(ringing = false, caller = caller, app = app, since = since)
+                _call.value = info
+                if (RideOverlay.canShow(c)) {
+                    CallAlert.cancel(c)
+                    RideOverlay.showCall(c, info)
+                } else {
+                    CallAlert.showActive(c, caller, app)
+                }
             }
             "ended" -> {
                 _call.value = null
                 CallAlert.cancel(c)
+                RideOverlay.hideCall()
                 if (msg.optBoolean("missed")) {
-                    RideNotifications.addLocal(app, caller, "Missed call")
+                    val missed = RideNotifications.addLocal(app, caller, "Missed call")
+                    RideOverlay.showMessage(c, missed)
                 }
             }
         }
@@ -57,6 +69,7 @@ object RideCall {
     fun clear(c: Context) {
         _call.value = null
         CallAlert.cancel(c)
+        RideOverlay.hideCall()
     }
 }
 

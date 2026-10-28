@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darksoul.darksride.link.LinkService
+import com.darksoul.darksride.overlay.RideOverlay
 import com.darksoul.darksride.phone.CallInfo
 import com.darksoul.darksride.phone.CallRelay
 import com.darksoul.darksride.phone.RideCall
@@ -155,4 +156,27 @@ fun CallAccessCard() {
             "allow Dark's Ride to manage phone calls.")
     }
     BigButton("Allow call access", onClick = { launcher.launch(CallRelay.PERMISSIONS) })
+}
+
+// ---------- Ride screen: allow floating cards over Maps ----------
+
+@Composable
+fun OverlayAccessCard() {
+    val context = LocalContext.current
+    var allowed by remember { mutableStateOf(RideOverlay.canShow(context)) }
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { allowed = RideOverlay.canShow(context) }
+
+    if (allowed) {
+        Body("Calls and messages float on top of Maps: on", dim = true)
+        return
+    }
+    Card {
+        Body("Show calls and messages on top of Google Maps while you ride. " +
+            "Turn on \"Display over other apps\" for Dark's Ride.")
+    }
+    BigButton("Allow display over other apps", onClick = {
+        launcher.launch(RideOverlay.permissionIntent(context))
+    })
 }

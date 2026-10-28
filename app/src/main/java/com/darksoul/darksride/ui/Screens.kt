@@ -247,6 +247,9 @@ fun LinkScreen(mode: AppMode, onChangeRole: () -> Unit, onTurnOff: () -> Unit) {
             else -> {
                 StatusCard(status = status, peer = peer, mode = mode)
 
+                if (mode == AppMode.RIDE) {
+                    OverlayAccessCard()
+                }
                 if (mode == AppMode.RIDE && status == LinkStatus.CONNECTED) {
                     RideContent()
                 }

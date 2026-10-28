@@ -25,7 +25,7 @@ object RideNotifications {
     private val _popup = MutableStateFlow<RideNotif?>(null)
     val popup: StateFlow<RideNotif?> = _popup.asStateFlow()
 
-    fun add(msg: JSONObject) {
+    fun add(msg: JSONObject): RideNotif {
         val n = RideNotif(
             id = msg.optString("id"),
             app = msg.optString("app"),
@@ -35,12 +35,13 @@ object RideNotifications {
         )
         _items.update { list -> (listOf(n) + list.filterNot { it.id == n.id }).take(KEEP) }
         _popup.value = n
+        return n
     }
 
     /** An entry made on the ride screen itself, e.g. a missed call. */
-    fun addLocal(app: String, title: String, text: String) {
+    fun addLocal(app: String, title: String, text: String): RideNotif {
         val now = System.currentTimeMillis()
-        add(
+        return add(
             JSONObject().put("id", "local-$now").put("app", app)
                 .put("title", title).put("text", text).put("time", now)
         )
