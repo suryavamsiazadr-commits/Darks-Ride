@@ -24,6 +24,9 @@ import com.darksoul.darksride.MainActivity
 import com.darksoul.darksride.R
 import com.darksoul.darksride.media.MediaRelay
 import com.darksoul.darksride.media.RideMedia
+import com.darksoul.darksride.phone.NotifyBridge
+import com.darksoul.darksride.phone.PhoneListenerService
+import com.darksoul.darksride.phone.RideNotifications
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -119,7 +122,9 @@ class LinkService : Service() {
         closeSockets()
         mediaRelay?.stop()
         mediaRelay = null
+        NotifyBridge.sink = null
         RideMedia.clear()
+        RideNotifications.clear()
         scope.cancel()
         LinkState.setStatus(LinkStatus.STOPPED)
         LinkState.log("Link stopped")
@@ -183,6 +188,9 @@ class LinkService : Service() {
         LinkState.resetReconnects()
         if (AppPrefs.mode(this) == AppMode.MAIN && mediaRelay == null) {
             mediaRelay = MediaRelay(this) { msg -> scope.launch { send(msg) } }
+        }
+        if (AppPrefs.mode(this) == AppMode.MAIN) {
+            NotifyBridge.sink = { msg -> scope.launch { send(msg) } }
         }
         mediaRelay?.ensureStarted()
         loopJob = scope.launch {
@@ -301,6 +309,7 @@ class LinkService : Service() {
         // Main phone: tell the ride screen what is playing right away.
         mediaRelay?.ensureStarted()
         mediaRelay?.refresh()
+        if (myRole == "main") PhoneListenerService.resendToBike()
 
         val heartbeat = launch {
             while (isActive) {
@@ -330,6 +339,7 @@ class LinkService : Service() {
             runCatching { sock.close() }
             socket = null
             RideMedia.clear()
+            RideNotifications.clear()
             LinkState.log("Disconnected from $peer")
             setStatus(LinkStatus.WAITING)
         }
@@ -346,6 +356,11 @@ class LinkService : Service() {
             "chat" -> LinkState.log("Received: ${msg.optString("text")}")
             "media" -> RideMedia.update(msg)                    // ride screen
             "cmd" -> mediaRelay?.command(msg.optString("a"))    // main phone
+            "notif" -> {                                        // ride screen
+                RideNotifications.add(msg)
+                LinkState.log("Message: ${msg.optString("title")} (${msg.optString("app")})")
+            }
+            "notif_gone" -> RideNotifications.remove(msg.optString("id"))
         }
     }
 

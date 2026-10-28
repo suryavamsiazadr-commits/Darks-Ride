@@ -187,11 +187,11 @@ fun MusicAccessCard() {
     ) { allowed = PhoneListenerService.hasAccess(context) }
 
     if (allowed) {
-        Body("Music control: on", dim = true)
+        Body("Music and messages access: on", dim = true)
         return
     }
     Card {
-        Body("To control music from the bike, turn on notification access for Dark's Ride.")
+        Body("To control music and see messages on the bike, turn on notification access for Dark's Ride.")
         Body("If the switch is greyed out: open App info for Dark's Ride, tap ⋮ (top right), " +
             "choose \"Allow restricted settings\", then try again.", dim = true)
     }

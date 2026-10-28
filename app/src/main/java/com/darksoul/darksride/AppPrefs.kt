@@ -43,6 +43,26 @@ object AppPrefs {
         putBoolean(KEY_LINK_ENABLED, enabled)
     }
 
+    // ---- Which notifications go to the bike (main phone) ----
+    const val NOTIFY_WHATSAPP = "notify_whatsapp"
+    const val NOTIFY_SMS = "notify_sms"
+    const val NOTIFY_OTHER = "notify_other"
+    const val NOTIFY_SHOW_TEXT = "notify_show_text"
+
+    private val FLAG_DEFAULTS = mapOf(
+        NOTIFY_WHATSAPP to true,
+        NOTIFY_SMS to true,
+        NOTIFY_OTHER to false,
+        NOTIFY_SHOW_TEXT to true
+    )
+
+    fun flag(c: Context, key: String): Boolean =
+        prefs(c).getBoolean(key, FLAG_DEFAULTS[key] ?: false)
+
+    fun setFlag(c: Context, key: String, value: Boolean) = prefs(c).edit {
+        putBoolean(key, value)
+    }
+
     /** Everything the link needs to start without the rider opening the app. */
     fun readyToLink(c: Context): Boolean {
         val mode = mode(c) ?: return false
