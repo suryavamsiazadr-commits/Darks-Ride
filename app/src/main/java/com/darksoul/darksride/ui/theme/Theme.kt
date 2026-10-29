@@ -30,7 +30,13 @@ data class GlassColors(
     val cardBorderTop: Color,
     val cardBorderBottom: Color,
     /** Soft glow under main buttons. */
-    val glow: Color
+    val glow: Color,
+    /** Shadow under cards (light theme: cards float on the page). */
+    val cardShadow: Color = Color.Transparent,
+    /** Warm light in the top corner of the page. */
+    val ambient: Color = Color.Transparent,
+    /** The faint specks behind the page: stars at night, dust in daylight. */
+    val speck: Color = Color.White
 )
 
 // True black (no blue or grey tint): kind to OLED screens and to the eyes at night.
@@ -45,15 +51,20 @@ private val DarkGlass = GlassColors(
     glow = Ember.copy(alpha = 0.55f)
 )
 
+// Daylight glass: pearl page with a warm ember glow, frosted white cards with a bright glossy
+// top and a soft shadow, so the same glass feel reads in sunlight.
 private val LightGlass = GlassColors(
     isDark = false,
-    backgroundTop = Color(0xFFF6F6F5),
-    backgroundBottom = Color(0xFFE4E4E2),
-    card = Color(0xCCFFFFFF),
-    cardHighlight = Color(0xB3FFFFFF),
+    backgroundTop = Color(0xFFFDFBF9),
+    backgroundBottom = Color(0xFFE7E3DF),
+    card = Color(0xB3FFFFFF),
+    cardHighlight = Color(0xF2FFFFFF),
     cardBorderTop = Color(0xFFFFFFFF),
-    cardBorderBottom = Color(0x1A000000),
-    glow = EmberDeep.copy(alpha = 0.40f)
+    cardBorderBottom = Color(0x1F5A3A20),
+    glow = EmberDeep.copy(alpha = 0.45f),
+    cardShadow = Color(0x405A3A20),
+    ambient = Ember.copy(alpha = 0.16f),
+    speck = Color(0xFF6B4A30)
 )
 
 val LocalGlass = staticCompositionLocalOf { DarkGlass }
@@ -82,7 +93,11 @@ private val LightScheme = lightColorScheme(
     onBackground = Ink,
     surface = Color(0xCCFFFFFF),
     onSurface = Ink,
-    surfaceContainerHigh = Color(0xFFFFFFFF)
+    surfaceContainer = Color(0xFFF7F4F1),
+    surfaceContainerHigh = Color(0xFFFFFFFF),
+    surfaceContainerHighest = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFEFEAE5),
+    outline = Color(0xFFCDBFB3)
 )
 
 @Composable

@@ -32,6 +32,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -90,6 +93,29 @@ private object DocLock {
     var picking = false
 }
 
+/**
+ * Asks for the fingerprint or PIN, then runs [action]. Skipped while the documents are
+ * already unlocked, and on phones without a screen lock (nothing to check against).
+ */
+private fun unlockThen(context: Context, title: String, action: () -> Unit) {
+    if (DocLock.unlocked) { action(); return }
+    val canLock = BiometricManager.from(context).canAuthenticate(BIOMETRIC_WEAK or DEVICE_CREDENTIAL) ==
+        BiometricManager.BIOMETRIC_SUCCESS
+    if (!canLock) { action(); return }
+    val activity = context.findActivity() as? FragmentActivity ?: return
+    BiometricPrompt(
+        activity, ContextCompat.getMainExecutor(context),
+        object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) = action()
+        }
+    ).authenticate(
+        BiometricPrompt.PromptInfo.Builder()
+            .setTitle(title)
+            .setAllowedAuthenticators(BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
+            .build()
+    )
+}
+
 internal fun Context.findActivity(): Activity? {
     var c: Context? = this
     while (c is ContextWrapper) {
@@ -139,26 +165,8 @@ private fun LockedScreen(insets: WindowInsets) {
                     "Set a PIN or fingerprint in Settings → Security for real protection.", dim = true)
             }
         }
-        BigButton(if (canLock) "Unlock with fingerprint or PIN" else "Open", onClick = unlock@{
-            if (!canLock) {
-                DocLock.unlocked = true
-                return@unlock
-            }
-            val activity = context.findActivity() as? FragmentActivity ?: return@unlock
-            val prompt = BiometricPrompt(
-                activity, ContextCompat.getMainExecutor(context),
-                object : BiometricPrompt.AuthenticationCallback() {
-                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                        DocLock.unlocked = true
-                    }
-                }
-            )
-            prompt.authenticate(
-                BiometricPrompt.PromptInfo.Builder()
-                    .setTitle("Unlock documents")
-                    .setAllowedAuthenticators(BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
-                    .build()
-            )
+        BigButton(if (canLock) "Unlock with fingerprint or PIN" else "Open", onClick = {
+            unlockThen(context, "Unlock documents") { DocLock.unlocked = true }
         })
         OfficialAppsCard()
     }
@@ -435,34 +443,154 @@ private fun renderFile(context: Context, file: DocFile): List<ImageBitmap> = run
 
 // ---------- Official apps ----------
 
+private const val SAMSUNG_WALLET = "com.samsung.android.spay"
+private const val SAMSUNG_PASS = "com.samsung.android.samsungpass"
+private const val DIGILOCKER = "com.digilocker.android"
+private const val MPARIVAHAN = "com.nic.mparivahan"
+
+private val isSamsung get() = Build.MANUFACTURER.equals("samsung", ignoreCase = true)
+
+/** The Samsung Wallet screen picked as "IDs" (Samsung has no public link to it). */
+private object IdsScreen {
+    private const val PREFS = "official_apps"
+    private const val KEY = "ids_screen"
+
+    fun get(c: Context): ComponentNameLite? =
+        c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null)?.let { ComponentNameLite.parse(it) }
+
+    fun set(c: Context, v: ComponentNameLite?) {
+        c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().apply {
+            if (v == null) remove(KEY) else putString(KEY, v.flat)
+        }.apply()
+    }
+
+    /** Screens inside Samsung Wallet / Pass that other apps may open and that look like IDs. */
+    fun candidates(c: Context): List<ComponentNameLite> {
+        val words = setOf("id", "ids", "digital", "digilocker", "document", "documents", "license",
+            "licence", "mdl", "identity", "idcard", "mobileid")
+        return listOf(SAMSUNG_WALLET, SAMSUNG_PASS).flatMap { pkg ->
+            val info = runCatching {
+                c.packageManager.getPackageInfo(pkg, android.content.pm.PackageManager.GET_ACTIVITIES)
+            }.getOrNull()
+            info?.activities.orEmpty()
+                .filter { it.exported && it.permission == null }
+                .map { ComponentNameLite(pkg, it.name) }
+                .filter { cn -> cn.tokens().any { it in words } }
+        }
+    }
+}
+
+internal data class ComponentNameLite(val pkg: String, val cls: String) {
+    val flat get() = "$pkg/$cls"
+    /** "DigitalIdListActivity" → "Digital Id List". */
+    val label: String
+        get() = cls.substringAfterLast('.').removeSuffix("Activity")
+            .replace(Regex("([a-z])([A-Z])"), "$1 $2")
+    fun tokens(): List<String> =
+        cls.substringAfterLast('.').replace(Regex("([a-z])([A-Z])"), "$1 $2")
+            .lowercase().split(' ', '_')
+    companion object {
+        fun parse(s: String) = s.split('/', limit = 2).takeIf { it.size == 2 }?.let { ComponentNameLite(it[0], it[1]) }
+    }
+}
+
+private fun launch(context: Context, cn: ComponentNameLite): Boolean = runCatching {
+    context.startActivity(Intent().setClassName(cn.pkg, cn.cls).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+}.isSuccess
+
 @Composable
 private fun OfficialAppsCard() {
     val context = LocalContext.current
+    var ids by remember { mutableStateOf(IdsScreen.get(context)) }
+    var picking by remember { mutableStateOf(false) }
+
     CollapsibleCard(
         title = "Official copies",
         stateKey = "official_docs",
         defaultOpen = false,
-        summary = if (Build.MANUFACTURER.equals("samsung", ignoreCase = true))
-            "Samsung Pass · DigiLocker · mParivahan" else "DigiLocker · mParivahan"
+        summary = (if (isSamsung) "Samsung Pass · DigiLocker · mParivahan" else "DigiLocker · mParivahan") +
+            " · fingerprint lock"
     ) {
         Body("Traffic police accept digital licences and RCs only from DigiLocker or mParivahan, " +
-            "not photos. Keep the originals with you too.", dim = true)
-        if (Build.MANUFACTURER.equals("samsung", ignoreCase = true)) {
-            // Samsung Pass keeps DigiLocker documents on Galaxy phones (newer phones: Samsung Wallet).
-            BigButton("Open Samsung Pass", onClick = {
-                openFirst(context, "com.samsung.android.samsungpass", "com.samsung.android.spay")
+            "not photos. Each opens after your fingerprint or PIN.", dim = true)
+        if (isSamsung) {
+            val saved = ids
+            BigButton(if (saved != null) "Open DigiLocker IDs" else "Open Samsung Pass", onClick = {
+                unlockThen(context, "Open your IDs") {
+                    // The picked IDs screen if it still opens, otherwise the app's home.
+                    if (saved == null || !launch(context, saved)) {
+                        openFirst(context, SAMSUNG_WALLET, SAMSUNG_PASS)
+                    }
+                }
             })
+            TextButton(onClick = { picking = true }) {
+                Text(if (saved != null) "IDs screen: ${saved.label} · change" else "Open the IDs tab directly…")
+            }
         }
-        BigButton("Open DigiLocker", secondary = true, onClick = { openApp(context, "com.digilocker.android") })
-        BigButton("Open mParivahan", secondary = true, onClick = { openApp(context, "com.nic.mparivahan") })
+        BigButton("Open DigiLocker", secondary = true, onClick = {
+            unlockThen(context, "Open DigiLocker") { openApp(context, DIGILOCKER) }
+        })
+        BigButton("Open mParivahan", secondary = true, onClick = {
+            unlockThen(context, "Open mParivahan") { openApp(context, MPARIVAHAN) }
+        })
     }
+
+    if (picking) IdsPicker(
+        onPick = { cn -> IdsScreen.set(context, cn); ids = cn },
+        onClose = { picking = false }
+    )
+}
+
+/**
+ * Samsung doesn't publish a link to the IDs tab, so this lists the Wallet screens that look
+ * like it. Tap "Try" to open one; if it's the right page, keep it and the button goes there.
+ */
+@Composable
+private fun IdsPicker(onPick: (ComponentNameLite?) -> Unit, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val options = remember { IdsScreen.candidates(context) }
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("Open the IDs tab directly") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (options.isEmpty()) {
+                    Body("This version of Samsung Wallet doesn't let other apps open its IDs page, " +
+                        "so the button opens Samsung Wallet's home. Tap \"IDs\" there.", dim = true)
+                } else {
+                    Body("Samsung doesn't share a link to the IDs page, so try these one by one. " +
+                        "When one shows your DigiLocker IDs, come back and tap Keep.", dim = true)
+                    Column(modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
+                        options.forEach { cn ->
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                Text(cn.label, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f))
+                                TextButton(onClick = {
+                                    unlockThen(context, "Open your IDs") {
+                                        if (!launch(context, cn)) {
+                                            Toast.makeText(context, "That one won't open", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }) { Text("Try") }
+                                TextButton(onClick = { onPick(cn); onClose() }) { Text("Keep") }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onClose) { Text("Done") } },
+        dismissButton = {
+            TextButton(onClick = { onPick(null); onClose() }) { Text("Use Wallet home") }
+        }
+    )
 }
 
 /** Opens the first of these apps that's installed. */
 private fun openFirst(context: Context, vararg packages: String) {
     val launch = packages.firstNotNullOfOrNull { context.packageManager.getLaunchIntentForPackage(it) }
     if (launch != null) context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    else Toast.makeText(context, "Samsung Pass isn't installed on this phone", Toast.LENGTH_LONG).show()
+    else Toast.makeText(context, "Samsung Wallet isn't installed on this phone", Toast.LENGTH_LONG).show()
 }
 
 private fun openApp(context: Context, pkg: String) {

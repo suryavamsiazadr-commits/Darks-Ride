@@ -62,13 +62,13 @@ fun RideColumn(
     insets: WindowInsets = WindowInsets.safeDrawing,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val glass = LocalGlass.current
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(listOf(LocalGlass.current.backgroundTop, LocalGlass.current.backgroundBottom))
-            )
-            .starfield(LocalGlass.current.isDark)
+            .background(Brush.verticalGradient(listOf(glass.backgroundTop, glass.backgroundBottom)))
+            .ambientGlow(glass.ambient)
+            .starfield(glass.isDark, glass.speck)
             .windowInsetsPadding(insets)
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
@@ -92,15 +92,35 @@ private val STARS: List<Star> = Random(450).let { r ->
     }
 }
 
-internal fun Modifier.starfield(enabled: Boolean): Modifier =
-    if (!enabled) this else drawBehind {
-        STARS.forEach { s ->
-            drawCircle(
-                color = Color.White.copy(alpha = s.alpha),
-                radius = s.radiusDp * density,
-                center = Offset(s.x * size.width, s.y * size.height)
+/** Stars at night; in daylight the same specks, darker and fainter, like dust on glass. */
+internal fun Modifier.starfield(isDark: Boolean, color: Color = Color.White): Modifier = drawBehind {
+    val strength = if (isDark) 1f else 0.45f
+    STARS.forEach { s ->
+        drawCircle(
+            color = color.copy(alpha = s.alpha * strength),
+            radius = s.radiusDp * density,
+            center = Offset(s.x * size.width, s.y * size.height)
+        )
+    }
+}
+
+/** A soft warm light from the top corner (light theme), and a cooler echo at the bottom. */
+private fun Modifier.ambientGlow(color: Color): Modifier =
+    if (color.alpha == 0f) this else drawBehind {
+        drawRect(
+            Brush.radialGradient(
+                listOf(color, Color.Transparent),
+                center = Offset(size.width * 0.1f, 0f),
+                radius = size.width * 1.1f
             )
-        }
+        )
+        drawRect(
+            Brush.radialGradient(
+                listOf(color.copy(alpha = color.alpha * 0.5f), Color.Transparent),
+                center = Offset(size.width, size.height),
+                radius = size.width * 0.9f
+            )
+        )
     }
 
 /** Screen title with the connection status in a small box beside it. */
@@ -235,8 +255,15 @@ internal fun Card(onClick: (() -> Unit)? = null, content: @Composable ColumnScop
     // Glass-lite: translucent body, light catching the top, a thin edge brighter at the top.
     var modifier = Modifier
         .fillMaxWidth()
+        .then(
+            if (glass.cardShadow.alpha > 0f) Modifier.shadow(
+                elevation = 10.dp, shape = shape,
+                ambientColor = glass.cardShadow, spotColor = glass.cardShadow
+            ) else Modifier
+        )
         .clip(shape)
         .background(glass.card)
+        // Gloss: a bright sheen across the top fading into the body.
         .background(Brush.verticalGradient(0f to glass.cardHighlight, 0.45f to Color.Transparent))
         .border(1.dp, Brush.verticalGradient(listOf(glass.cardBorderTop, glass.cardBorderBottom)), shape)
     if (onClick != null) modifier = modifier.clickable(onClick = onClick)

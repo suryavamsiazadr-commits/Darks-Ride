@@ -59,21 +59,29 @@ data class RideDestination(
     val lat: Double?,
     val lng: Double?,
     /** When it was sent (millis). */
-    val sentAt: Long = System.currentTimeMillis()
+    val sentAt: Long = System.currentTimeMillis(),
+    /** Area or street, when known. */
+    val area: String? = null,
+    /** For a shared route: the road Google Maps chose ("via NH 44") and where it started. */
+    val via: String? = null,
+    val from: String? = null
 ) {
     /** The message the bike understands ({"t":"nav", ...}). */
     fun toJson(): JSONObject = JSONObject().put("t", "nav").put("name", name).put("sentAt", sentAt).apply {
         query?.let { put("query", it) }
         url?.let { put("url", it) }
+        area?.let { put("address", it) }
+        via?.let { put("via", it) }
+        from?.let { put("from", it) }
         if (lat != null && lng != null) {
             put("lat", lat)
             put("lng", lng)
         }
     }
 
-    /** The address part of [query], without the repeated place name. */
+    /** The area or address, without the repeated place name. */
     val address: String?
-        get() = query?.removePrefix(name)?.trim(',', ' ')?.ifEmpty { null }
+        get() = area ?: query?.removePrefix(name)?.trim(',', ' ')?.ifEmpty { null }
 
     fun samePlace(other: RideDestination): Boolean =
         name == other.name && query == other.query && lat == other.lat && lng == other.lng
@@ -85,7 +93,10 @@ data class RideDestination(
             url = o.optString("url").ifEmpty { null },
             lat = if (o.has("lat")) o.optDouble("lat") else null,
             lng = if (o.has("lng")) o.optDouble("lng") else null,
-            sentAt = o.optLong("sentAt", System.currentTimeMillis())
+            sentAt = o.optLong("sentAt", System.currentTimeMillis()),
+            area = o.optString("address").ifEmpty { null },
+            via = o.optString("via").ifEmpty { null },
+            from = o.optString("from").ifEmpty { null }
         )
     }
 }

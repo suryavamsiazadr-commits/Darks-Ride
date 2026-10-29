@@ -56,7 +56,8 @@ fun DestinationCard() {
     CollapsibleCard(
         title = "Navigation",
         stateKey = "destination",
-        summary = current?.let { "Shared route: ${it.name}" } ?: "Recent: ${recent.first().name}",
+        summary = current?.let { "To ${it.name}" + (it.via?.let { v -> " via $v" } ?: "") }
+            ?: "Recent: ${recent.first().name}",
         trailing = { open ->
             if (!open && current != null) {
                 TextButton(onClick = { RideNav.navigate(context, current) }) { Text("Navigate") }
@@ -64,7 +65,8 @@ fun DestinationCard() {
         }
     ) {
         if (current != null) {
-            Text("SHARED ROUTE", fontSize = 12.sp, fontWeight = FontWeight.Bold,
+            Text(if (current.from != null || current.via != null) "SHARED ROUTE · GOING TO" else "SHARED PLACE",
+                fontSize = 12.sp, fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary, letterSpacing = 1.2.sp)
             Text(current.name, fontSize = 24.sp, fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -72,6 +74,8 @@ fun DestinationCard() {
                 Text(it, fontSize = 15.sp, maxLines = 3, overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f))
             }
+            current.via?.let { Detail("Via", it) }
+            current.from?.let { Detail("From", it) }
             Detail("Sent", "${clockTime(current.sentAt)} · ${ago(current.sentAt)}")
             Detail("Mode", "Two-wheeler, Google Maps")
             if (current.lat != null && current.lng != null) {

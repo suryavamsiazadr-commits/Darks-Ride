@@ -467,7 +467,7 @@ class LinkService : Service() {
 
     /** Main phone: work out the destination (may use internet) and send it to the bike. */
     private fun deliverDestination(text: String) {
-        val json = runCatching { Destination.build(text) }.getOrNull()
+        val json = runCatching { Destination.build(text, this) }.getOrNull()
         if (json == null) {
             LinkState.log("Could not read that place")
             return

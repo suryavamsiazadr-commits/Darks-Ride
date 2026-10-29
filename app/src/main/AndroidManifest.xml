@@ -29,6 +29,11 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Official document apps: to find the IDs screen inside Samsung Wallet. -->
+        <package android:name="com.samsung.android.spay" />
+        <package android:name="com.samsung.android.samsungpass" />
+        <package android:name="com.digilocker.android" />
+        <package android:name="com.nic.mparivahan" />
     </queries>
 
     <application
