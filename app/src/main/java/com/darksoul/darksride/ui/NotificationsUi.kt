@@ -81,6 +81,16 @@ fun MessagePopup() {
 fun MessagesCard() {
     val context = LocalContext.current
     val items by RideNotifications.items.collectAsState()
+    // Nothing to show: a still card, so tapping it doesn't open and close an empty box.
+    if (items.isEmpty()) {
+        Card {
+            Text("Messages", fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface)
+            Text("No new messages", fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
+        }
+        return
+    }
     CollapsibleCard(
         title = "Messages",
         stateKey = "messages",
@@ -95,11 +105,7 @@ fun MessagesCard() {
             }
         }
     ) {
-        if (items.isEmpty()) {
-            Body("No new messages", dim = true)
-        } else {
-            Body("Tap a message to dismiss it here and on your main phone.", dim = true)
-        }
+        Body("Tap a message to dismiss it here and on your main phone.", dim = true)
         items.take(5).forEachIndexed { i, n ->
             if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
             MessageRow(n, onDismiss = { RideNotifications.dismissEverywhere(context, n.id) })

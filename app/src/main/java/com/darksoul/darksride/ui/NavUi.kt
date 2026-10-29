@@ -65,22 +65,8 @@ fun DestinationCard() {
         }
     ) {
         if (current != null) {
-            Text(if (current.from != null || current.via != null) "SHARED ROUTE · GOING TO" else "SHARED PLACE",
-                fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary, letterSpacing = 1.2.sp)
-            Text(current.name, fontSize = 24.sp, fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            current.address?.let {
-                Text(it, fontSize = 15.sp, maxLines = 3, overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f))
-            }
-            current.via?.let { Detail("Via", it) }
-            current.from?.let { Detail("From", it) }
-            Detail("Sent", "${clockTime(current.sentAt)} · ${ago(current.sentAt)}")
-            Detail("Mode", "Two-wheeler, Google Maps")
-            if (current.lat != null && current.lng != null) {
-                Detail("Location", "%.5f, %.5f".format(current.lat, current.lng))
-            }
+            DestinationDetails(current, label = if (current.from != null || current.via != null)
+                "SHARED ROUTE · GOING TO" else "SHARED PLACE")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(Modifier.weight(1f)) { BigButton("Navigate", onClick = { RideNav.navigate(context, current) }) }
                 Column(Modifier.weight(1f)) {
@@ -97,6 +83,26 @@ fun DestinationCard() {
                 HistoryRow(d, action = "Go", onClick = { RideNav.goAgain(context, d) })
             }
         }
+    }
+}
+
+/** Where it's going, with the route details. Same on both phones. */
+@Composable
+private fun DestinationDetails(d: RideDestination, label: String) {
+    Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary, letterSpacing = 1.2.sp)
+    Text(d.name, fontSize = 24.sp, fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    d.address?.let {
+        Text(it, fontSize = 15.sp, maxLines = 3, overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f))
+    }
+    d.via?.let { Detail("Via", it) }
+    d.from?.let { Detail("From", it) }
+    Detail("Sent", "${clockTime(d.sentAt)} · ${ago(d.sentAt)}")
+    Detail("Mode", "Two-wheeler, Google Maps")
+    if (d.lat != null && d.lng != null) {
+        Detail("Location", "%.5f, %.5f".format(d.lat, d.lng))
     }
 }
 
@@ -143,22 +149,49 @@ private fun sendAgain(context: android.content.Context, d: RideDestination) {
     Toast.makeText(context, "Sent to bike: ${d.name}", Toast.LENGTH_SHORT).show()
 }
 
-/** Main phone Ride page: how to send a place, plus the last few sent (tap to send again). */
+/**
+ * Main phone Ride page: the last place sent to the bike with the same details the bike shows,
+ * and the recently sent list below it (tap to send again).
+ */
 @Composable
 fun SendToBikeCard() {
     val context = LocalContext.current
     LaunchedEffect(Unit) { NavHistory.load(context) }
     val history by NavHistory.items.collectAsState()
-    Card {
-        Text("Plan a ride", fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface)
-        Body("In Google Maps, find a place and tap Share → Send to bike. " +
-            "${RoleNames.RIDE} starts navigating.", dim = true)
-        if (history.isNotEmpty()) {
+    val last = history.firstOrNull()
+    val recent = history.drop(1).take(5)
+
+    CollapsibleCard(
+        title = "Plan a ride",
+        stateKey = "plan_ride",
+        summary = last?.let { "Last sent: ${it.name}" + (it.via?.let { v -> " via $v" } ?: "") }
+            ?: "Share a place from Google Maps",
+        trailing = { open ->
+            if (!open && last != null) TextButton(onClick = { sendAgain(context, last) }) { Text("Send") }
+        }
+    ) {
+        if (last == null) {
+            Body("In Google Maps, find a place or a route and tap Share → Send to bike. " +
+                "${RoleNames.RIDE} starts navigating.", dim = true)
+        } else {
+            DestinationDetails(last, label = if (last.from != null || last.via != null)
+                "SENT TO BIKE · ROUTE TO" else "SENT TO BIKE")
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(Modifier.weight(1f)) { BigButton("Send again", onClick = { sendAgain(context, last) }) }
+                Column(Modifier.weight(1f)) {
+                    BigButton("Show on map", secondary = true, onClick = { RideNav.showOnMap(context, last) })
+                }
+            }
+            Body("New place: Google Maps → Share → Send to bike.", dim = true)
+        }
+        if (recent.isNotEmpty()) {
             Text("RECENTLY SENT", fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier.padding(top = 6.dp))
-            history.take(3).forEach { d -> HistoryRow(d, action = "Send", onClick = { sendAgain(context, d) }) }
+                modifier = Modifier.padding(top = 8.dp))
+            recent.forEachIndexed { i, d ->
+                if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                HistoryRow(d, action = "Send", onClick = { sendAgain(context, d) })
+            }
         }
     }
 }

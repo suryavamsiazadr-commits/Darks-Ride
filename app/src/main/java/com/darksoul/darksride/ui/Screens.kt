@@ -170,6 +170,8 @@ fun LinkScreen(
                 }
             }
         }
+        // Main phone shows the version above its tabs; the bike phone shows it here.
+        if (mode == AppMode.RIDE) VersionLabel(modifier = Modifier.padding(top = 8.dp))
     }
 }
 
@@ -271,10 +273,10 @@ internal fun ActivityCard() {
         defaultOpen = false,
         summary = lines.firstOrNull()?.let { "${it.time}  ${it.text}" } ?: "Nothing yet"
     ) {
-        if (lines.isEmpty()) Body("Nothing yet.", dim = true)
+        Body(if (lines.isEmpty()) "Nothing yet." else "Saved on this phone and never cleared. Newest first.", dim = true)
         Column(
             modifier = Modifier
-                .heightIn(max = 260.dp)
+                .heightIn(max = 320.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             lines.forEach { line -> LogRow(line) }
