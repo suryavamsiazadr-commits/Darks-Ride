@@ -169,7 +169,9 @@ fun MusicFullScreen(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
 
     BoxWithConstraints(modifier = modifier.fillMaxSize().rideBackground()) {
         ArtBackdrop(n, strong = true)
-        val wide = maxWidth > maxHeight * 1.05f
+        val boxW = maxWidth
+        val boxH = maxHeight
+        val wide = boxW > boxH * 1.05f
         val pad = 14.dp
         Column(Modifier.fillMaxSize().padding(pad), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // Top: what's playing on which app, and the way back to the cards.
@@ -184,7 +186,7 @@ fun MusicFullScreen(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
             }
             if (wide) {
                 // Square-ish or landscape: art on the left, everything else on the right.
-                val art = minOf(maxHeight - 90.dp, maxWidth * 0.42f)
+                val art = minOf(boxH - 90.dp, boxW * 0.42f)
                 Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Art(n, art, breathe = true)
@@ -197,7 +199,7 @@ fun MusicFullScreen(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
                 }
             } else {
                 // Tall: art on top, then title, progress and controls.
-                val art = minOf(maxWidth - pad * 2 - 40.dp, maxHeight * 0.36f)
+                val art = minOf(boxW - pad * 2 - 40.dp, boxH * 0.36f)
                 Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceEvenly) {
                     Art(n, art, breathe = true)
