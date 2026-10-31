@@ -169,7 +169,7 @@ private fun ColumnScope.SidePanels(modifier: Modifier, compact: Boolean = false)
         c != null -> CallPanel(c, modifier.weight(1f))
         fresh != null -> {
             MessagePanel(fresh, spotlight = true, modifier = modifier.weight(1f))
-            if (!compact) RoutePanel(modifier)
+            if (!compact) RoutePanel(modifier, slim = true)
         }
         else -> {
             RoutePanel(modifier.weight(1f))

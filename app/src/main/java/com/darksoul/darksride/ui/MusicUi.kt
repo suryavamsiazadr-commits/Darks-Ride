@@ -315,7 +315,7 @@ internal fun VolumeBar(volume: Int, max: Int, modifier: Modifier) {
                 )
             }
         }
-        Text("Volume $volume / $max", fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.65f),
+        Text("$volume / $max", fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.65f),
             maxLines = 1, softWrap = false, modifier = Modifier.padding(top = 4.dp))
     }
 }
