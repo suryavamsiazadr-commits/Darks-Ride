@@ -8,10 +8,8 @@ import android.graphics.Paint
 import android.graphics.Shader
 import android.util.Base64
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
+import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.core.app.ApplicationProvider
 import com.darksoul.darksride.link.LinkState
 import com.darksoul.darksride.link.LinkStatus
@@ -49,7 +47,7 @@ import java.io.File
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ScreenshotTest {
     @get:Rule
-    val rule = createComposeRule()
+    val rule = createAndroidComposeRule<ComponentActivity>()
 
     private val ctx: Context get() = ApplicationProvider.getApplicationContext()
 
@@ -145,7 +143,10 @@ class ScreenshotTest {
         rule.mainClock.autoAdvance = false // the equalizer and ring pulse never stop
         rule.setContent { DarksRideTheme { content() } }
         rule.mainClock.advanceTimeBy(1_500)
-        val bitmap = rule.onRoot().captureToImage().asAndroidBitmap()
+        // Draw the window ourselves: the test helper's capture waits for animations to stop.
+        val view = rule.activity.window.decorView
+        val bitmap = Bitmap.createBitmap(view.width.coerceAtLeast(1), view.height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+        view.draw(Canvas(bitmap))
         val dir = File("build/screens").apply { mkdirs() }
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
