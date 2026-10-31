@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -27,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -48,6 +50,7 @@ import com.darksoul.darksride.link.LinkState
 import com.darksoul.darksride.link.LinkStatus
 import com.darksoul.darksride.nav.RideNav
 import com.darksoul.darksride.net.BikeNet
+import com.darksoul.darksride.media.RideMedia
 import com.darksoul.darksride.phone.RideCall
 import com.darksoul.darksride.phone.RideNotif
 import com.darksoul.darksride.phone.RideNotifications
@@ -64,12 +67,56 @@ fun rideLayoutFor(width: Dp, height: Dp): RideLayout = when {
     else -> RideLayout.PORTRAIT
 }
 
+/** The cards on the bike phone's ride screen. The rider sets their order in Settings. */
+enum class RideCard(val label: String) {
+    MUSIC("Music"),
+    NAVIGATION("Navigation"),
+    MESSAGES("Messages"),
+    INTERNET("Bike internet"),
+    RIDE_MODE("Ride mode");
+
+    companion object {
+        val DEFAULT = listOf(MUSIC, NAVIGATION, MESSAGES, INTERNET, RIDE_MODE)
+    }
+}
+
+/** What actually shows, top to bottom (CALL isn't in the rider's list: it only exists during a call). */
+private sealed interface Slot {
+    data object Call : Slot
+    data class Card(val card: RideCard, val live: Boolean) : Slot
+}
+
 /**
- * The bike phone while linked. Built so nothing needs scrolling while riding:
- *  - portrait: music right under the title, other cards below it,
- *  - landscape: music on the left, call / message / route on the right (like Android Auto),
- *  - compact (the Wing's small screen, or split screen beside Google Maps): only what fits.
- * A call always takes the top spot, then a new message for its spotlight time, then music.
+ * The rider's order, with whatever is live lifted to the top for as long as it's live:
+ * a call (until it ends), then a new message (for its spotlight time), then music while it plays.
+ * When that ends the card drops back to its own place.
+ */
+@Composable
+private fun rideSlots(): List<Slot> {
+    val context = LocalContext.current
+    val call by RideCall.call.collectAsState()
+    val popup by RideNotifications.popup.collectAsState()
+    val now by RideMedia.now.collectAsState()
+    val order by AppPrefs.cardOrder(context).collectAsState()
+    val live = buildList {
+        if (popup != null) add(RideCard.MESSAGES)
+        if (now?.playing == true) add(RideCard.MUSIC)
+    }
+    return buildList {
+        if (call != null) add(Slot.Call)
+        live.forEach { add(Slot.Card(it, live = true)) }
+        order.filterNot { it in live }.forEach { add(Slot.Card(it, live = false)) }
+    }
+}
+
+/**
+ * The bike phone while linked. Every card is there in every layout, in the rider's order:
+ *  - portrait: one column,
+ *  - landscape: the top card big on the left, the rest listed on the right,
+ *  - compact (the Wing's small screen, or split screen beside Maps): one column, each card the
+ *    full width so the buttons stay big.
+ * Whatever is live (call, new message, playing music) is first, and the list jumps back to the
+ * top when something new arrives, so there's nothing to scroll for while riding.
  */
 @Composable
 fun RideDashboard(
@@ -88,105 +135,148 @@ fun RideDashboard(
         delay(AppPrefs.spotlightSeconds(context) * 1_000L)
         RideNotifications.dismissPopup(fresh.id)
     }
+    val slots = rideSlots()
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().rideBackground().windowInsetsPadding(insets)) {
-        when (rideLayoutFor(maxWidth, maxHeight)) {
-            RideLayout.PORTRAIT -> PortraitRide(title, onSettings, onClose, insets, portraitExtras)
-            RideLayout.WIDE -> WideRide(title, onSettings, onClose)
-            RideLayout.COMPACT -> CompactRide(title, onSettings, onClose, maxWidth, maxHeight)
+        val layout = rideLayoutFor(maxWidth, maxHeight)
+        val h = maxHeight
+        when (layout) {
+            RideLayout.PORTRAIT -> ListRide(title, onSettings, onClose, slots, compact = false, h, portraitExtras)
+            RideLayout.COMPACT -> ListRide(title, onSettings, onClose, slots, compact = true, h, portraitExtras)
+            RideLayout.WIDE -> WideRide(title, onSettings, onClose, slots, portraitExtras)
         }
     }
 }
 
+/** One column (portrait and compact). Jumps to the top when something becomes live. */
 @Composable
-private fun PortraitRide(
+private fun ListRide(
     title: String,
     onSettings: (() -> Unit)?,
     onClose: (() -> Unit)?,
-    insets: WindowInsets,
+    slots: List<Slot>,
+    compact: Boolean,
+    height: Dp,
     extras: @Composable ColumnScope.() -> Unit
 ) {
     val scroll = rememberScrollState()
-    val call by RideCall.call.collectAsState()
-    val popup by RideNotifications.popup.collectAsState()
-    // Whatever just arrived is at the top: jump back up so it's in view without scrolling.
-    LaunchedEffect(call != null, popup?.id) { scroll.animateScrollTo(0) }
-    RideColumn(insets = WindowInsets(0), scroll = scroll, background = false) {
-        RideTopBar(title, onSettings, onClose, big = true)
-        RideContent()
+    val first = slots.firstOrNull()
+    LaunchedEffect(first) { scroll.animateScrollTo(0) }
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(scroll)
+            .padding(horizontal = if (compact) 10.dp else 20.dp, vertical = if (compact) 10.dp else 16.dp),
+        verticalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 14.dp)
+    ) {
+        RideTopBar(title, onSettings, onClose, big = !compact)
+        slots.forEach { slot ->
+            key(slotKey(slot)) {
+                if (compact) CompactSlot(slot, height) else PortraitSlot(slot)
+            }
+        }
         extras()
     }
 }
 
+/** Landscape: the top card fills the left half; every other card is listed on the right. */
 @Composable
-private fun WideRide(title: String, onSettings: (() -> Unit)?, onClose: (() -> Unit)?) {
+private fun WideRide(
+    title: String,
+    onSettings: (() -> Unit)?,
+    onClose: (() -> Unit)?,
+    slots: List<Slot>,
+    extras: @Composable ColumnScope.() -> Unit
+) {
+    val scroll = rememberScrollState()
+    val lead = slots.firstOrNull()
+    LaunchedEffect(lead) { scroll.animateScrollTo(0) }
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         RideTopBar(title, onSettings, onClose, big = false)
         Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MusicPanel(modifier = Modifier.weight(1.1f).fillMaxHeight())
-            Column(modifier = Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SidePanels(Modifier.fillMaxWidth())
+            Box(Modifier.weight(1.1f).fillMaxHeight()) {
+                if (lead != null) LeadSlot(lead, Modifier.fillMaxSize())
             }
-        }
-    }
-}
-
-@Composable
-private fun CompactRide(title: String, onSettings: (() -> Unit)?, onClose: (() -> Unit)?, width: Dp, height: Dp) {
-    val call by RideCall.call.collectAsState()
-    val c = call
-    Column(modifier = Modifier.fillMaxSize().padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        RideTopBar(title, onSettings, onClose, big = false)
-        when {
-            c != null -> CallPanel(c, Modifier.fillMaxWidth().weight(1f))
-            width >= 440.dp && width >= height * 0.95f -> Row(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Column(
+                modifier = Modifier.weight(1f).fillMaxHeight().verticalScroll(scroll),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                MusicPanel(Modifier.weight(1.15f).fillMaxHeight())
-                Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SidePanels(Modifier.fillMaxWidth(), compact = true)
-                }
-            }
-            else -> {
-                TopStrip()
-                MusicPanel(Modifier.fillMaxWidth().weight(1f))
+                slots.drop(1).forEach { slot -> key(slotKey(slot)) { CompactSlot(slot, 300.dp) } }
+                extras()
             }
         }
     }
 }
 
-/** Right-hand side in landscape: call, else new message, then the route and messages. */
+private fun slotKey(slot: Slot): String = when (slot) {
+    Slot.Call -> "call"
+    is Slot.Card -> slot.card.name
+}
+
+/** Portrait: the full cards. */
 @Composable
-private fun ColumnScope.SidePanels(modifier: Modifier, compact: Boolean = false) {
+private fun PortraitSlot(slot: Slot) {
+    val call by RideCall.call.collectAsState()
+    val popup by RideNotifications.popup.collectAsState()
+    when (slot) {
+        Slot.Call -> call?.let { CallCard(it) }
+        is Slot.Card -> when (slot.card) {
+            RideCard.MUSIC -> NowPlayingCard()
+            RideCard.NAVIGATION -> DestinationCard()
+            RideCard.MESSAGES -> MessagesCard(spotlight = popup != null)
+            RideCard.INTERNET -> InternetCard(AppMode.RIDE)
+            RideCard.RIDE_MODE -> RideModeCard(AppMode.RIDE)
+        }
+    }
+}
+
+/** Compact and the landscape list: full-width cards sized for a short screen. */
+@Composable
+private fun CompactSlot(slot: Slot, height: Dp) {
     val call by RideCall.call.collectAsState()
     val popup by RideNotifications.popup.collectAsState()
     val items by RideNotifications.items.collectAsState()
-    val c = call
-    val fresh = popup
-    when {
-        c != null -> CallPanel(c, modifier.weight(1f))
-        fresh != null -> {
-            MessagePanel(fresh, spotlight = true, modifier = modifier.weight(1f))
-            if (!compact) RoutePanel(modifier, slim = true)
-        }
-        else -> {
-            RoutePanel(modifier.weight(1f))
-            val latest = items.firstOrNull()
-            if (latest != null) MessagePanel(latest, spotlight = false, more = items.size - 1, modifier = modifier)
-            else if (!compact) QuietTile("No new messages", modifier)
+    val panelHeight = (height * 0.62f).coerceIn(190.dp, 300.dp)
+    when (slot) {
+        Slot.Call -> call?.let { CallPanel(it, Modifier.fillMaxWidth().height(panelHeight)) }
+        is Slot.Card -> when (slot.card) {
+            RideCard.MUSIC -> MusicPanel(Modifier.fillMaxWidth().height(panelHeight))
+            RideCard.NAVIGATION -> RoutePanel(Modifier.fillMaxWidth())
+            RideCard.MESSAGES -> {
+                val fresh = popup
+                val latest = items.firstOrNull()
+                when {
+                    fresh != null -> MessagePanel(fresh, spotlight = true, modifier = Modifier.fillMaxWidth())
+                    latest != null -> MessagePanel(latest, spotlight = false, more = items.size - 1, modifier = Modifier.fillMaxWidth())
+                    else -> QuietTile("No new messages", Modifier.fillMaxWidth())
+                }
+            }
+            RideCard.INTERNET -> InternetCard(AppMode.RIDE)
+            RideCard.RIDE_MODE -> RideModeCard(AppMode.RIDE)
         }
     }
 }
 
-/** Narrow layouts: one slim line above the music for a new message or the route. */
+/** Landscape left half: the top card, as big as the space. */
 @Composable
-private fun TopStrip() {
+private fun LeadSlot(slot: Slot, modifier: Modifier) {
+    val call by RideCall.call.collectAsState()
     val popup by RideNotifications.popup.collectAsState()
-    val fresh = popup
-    if (fresh != null) MessagePanel(fresh, spotlight = true, modifier = Modifier.fillMaxWidth())
-    else RoutePanel(Modifier.fillMaxWidth(), slim = true)
+    val items by RideNotifications.items.collectAsState()
+    when (slot) {
+        Slot.Call -> call?.let { CallPanel(it, modifier) }
+        is Slot.Card -> when (slot.card) {
+            RideCard.MUSIC -> MusicPanel(modifier)
+            RideCard.NAVIGATION -> RoutePanel(modifier)
+            RideCard.MESSAGES -> {
+                val n = popup ?: items.firstOrNull()
+                if (n != null) MessagePanel(n, spotlight = popup != null, more = if (popup == null) items.size - 1 else 0, modifier = modifier)
+                else QuietTile("No new messages", modifier)
+            }
+            RideCard.INTERNET, RideCard.RIDE_MODE -> Column(modifier.verticalScroll(rememberScrollState())) {
+                if (slot.card == RideCard.INTERNET) InternetCard(AppMode.RIDE) else RideModeCard(AppMode.RIDE)
+            }
+        }
+    }
 }
 
 // ---------- Pieces ----------

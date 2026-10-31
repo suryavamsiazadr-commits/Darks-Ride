@@ -119,9 +119,6 @@ fun LinkScreen(
             onSettings = onOpenSettings,
             insets = insets,
             portraitExtras = {
-                InternetCard(mode)
-                RideModeCard(mode = mode, on = rideOn)
-                MapsBesideCard()
                 SetupCard(mode, hideWhenComplete = true)
                 VersionLabel(modifier = Modifier.padding(top = 8.dp))
             }
@@ -199,7 +196,7 @@ fun LinkScreen(
  * music, messages, calls). Off stays off after restarts; the rest of the app still works.
  */
 @Composable
-private fun RideModeCard(mode: AppMode, on: Boolean) {
+internal fun RideModeCard(mode: AppMode, on: Boolean = AppPrefs.rideMode(LocalContext.current).collectAsState().value) {
     val context = LocalContext.current
     Card {
         Row(verticalAlignment = Alignment.CenterVertically) {

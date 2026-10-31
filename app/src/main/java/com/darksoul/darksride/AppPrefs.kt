@@ -113,6 +113,27 @@ object AppPrefs {
     fun spotlightSeconds(c: Context): Int = prefs(c).getInt("spotlight_seconds", 10)
     fun setSpotlightSeconds(c: Context, s: Int) = prefs(c).edit { putInt("spotlight_seconds", s.coerceIn(5, 60)) }
 
+    // ---- Bike phone: order of the ride screen's cards ----
+    private val _cardOrder = MutableStateFlow(com.darksoul.darksride.ui.RideCard.DEFAULT)
+    private var cardOrderLoaded = false
+
+    fun cardOrder(c: Context): StateFlow<List<com.darksoul.darksride.ui.RideCard>> {
+        if (!cardOrderLoaded) {
+            cardOrderLoaded = true
+            val saved = prefs(c).getString("card_order", null)?.split(',')
+                ?.mapNotNull { n -> com.darksoul.darksride.ui.RideCard.entries.firstOrNull { it.name == n } }
+                .orEmpty()
+            // Keep the saved order; add any card it doesn't mention (new in an update) at the end.
+            _cardOrder.value = (saved + com.darksoul.darksride.ui.RideCard.DEFAULT).distinct()
+        }
+        return _cardOrder.asStateFlow()
+    }
+
+    fun setCardOrder(c: Context, order: List<com.darksoul.darksride.ui.RideCard>) {
+        prefs(c).edit { putString("card_order", order.joinToString(",") { it.name }) }
+        _cardOrder.value = order
+    }
+
     // ---- Which cards are open on screen ----
     fun cardOpen(c: Context, key: String, default: Boolean): Boolean =
         prefs(c).getBoolean("card_$key", default)

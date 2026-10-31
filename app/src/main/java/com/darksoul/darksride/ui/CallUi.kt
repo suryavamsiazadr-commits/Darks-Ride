@@ -90,7 +90,7 @@ fun RideContent() {
 }
 
 @Composable
-private fun CallCard(call: CallInfo) {
+internal fun CallCard(call: CallInfo) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     val glass = LocalGlass.current

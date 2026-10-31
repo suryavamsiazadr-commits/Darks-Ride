@@ -95,6 +95,9 @@ class ScreenshotTest {
     @Test @Config(qualifiers = "w465dp-h411dp-land-xhdpi")
     fun splitHalfCall() = shoot("split_half_call") { music(); call(); RideScreen() }
 
+    @Test @Config(qualifiers = "w937dp-h411dp-land-xhdpi")
+    fun rideWidePaused() = shoot("ride_wide_paused") { pausedMusic(); route(); RideScreen() }
+
     @Test @Config(qualifiers = "w411dp-h891dp-port-xhdpi")
     fun rideNoMusicYet() = shoot("ride_waiting_music") { RideScreen() }
 
@@ -124,7 +127,7 @@ class ScreenshotTest {
     @Composable
     private fun RideScreen(panel: Boolean = false) {
         if (panel) RideDashboard(title = "Dark's Ride", onClose = {})
-        else RideDashboard(title = "Handlebar HQ", onSettings = {}, portraitExtras = { InternetCard(AppMode.RIDE) })
+        else RideDashboard(title = "Handlebar HQ", onSettings = {}, portraitExtras = {})
     }
 
     /** Sets the theme and the ride state, renders, waits for the slide-ins, saves a PNG. */
@@ -163,6 +166,11 @@ class ScreenshotTest {
                 .put("artist", "Pritam, Arijit Singh").put("playing", true).put("vol", 9).put("volMax", 15)
                 .put("artNew", true).put("art", fakeArt())
         )
+    }
+
+    private fun pausedMusic() {
+        RideMedia.update(JSONObject().put("t", "media").put("app", "YouTube Music").put("title", "Kesariya")
+            .put("artist", "Arijit Singh").put("playing", false).put("vol", 9).put("volMax", 15))
     }
 
     private fun route() {
