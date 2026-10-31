@@ -77,10 +77,14 @@ jobs:
           grep -E "^e: |What went wrong|FAILED|Exception|Caused by" -A3 screens.log | head -80 | while IFS= read -r line; do
             echo "::error::${line}"
           done
-      - uses: actions/upload-artifact@v4
+      - name: Publish screens to the "screens" branch
         if: always()
-        with:
-          name: screens
-          path: |
-            app/build/screens/
-            app/build/reports/tests/
+        run: |
+          mkdir -p /tmp/out && cp -r app/build/screens/. /tmp/out/ 2>/dev/null || true
+          cp screens.log /tmp/out/ 2>/dev/null || true
+          cd /tmp/out
+          git init -q -b screens
+          git config user.name "screens-bot"
+          git config user.email "screens-bot@users.noreply.github.com"
+          git add -A && git commit -q -m "Screens for ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" screens
