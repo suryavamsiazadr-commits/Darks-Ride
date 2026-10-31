@@ -173,7 +173,7 @@ fun LinkScreen(
 
             else -> {
                 RideModeCard(mode = mode, on = rideOn)
-                InternetCard(mode)
+                if (mode == AppMode.RIDE) InternetCard(mode)
                 // Setup lives in Settings; it only shows here while something is missing.
                 SetupCard(mode, hideWhenComplete = true)
 
@@ -185,6 +185,7 @@ fun LinkScreen(
                         BigButton("Start link", onClick = { LinkService.turnOn(context) })
                     }
                     SendToBikeCard()
+                    InternetCard(mode)
                 }
             }
         }

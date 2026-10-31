@@ -316,7 +316,7 @@ internal fun VolumeBar(volume: Int, max: Int, modifier: Modifier) {
             }
         }
         Text("Volume $volume / $max", fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.65f),
-            modifier = Modifier.padding(top = 4.dp))
+            maxLines = 1, softWrap = false, modifier = Modifier.padding(top = 4.dp))
     }
 }
 
@@ -363,9 +363,12 @@ fun MusicPanel(modifier: Modifier = Modifier) {
             .border(1.dp, Brush.verticalGradient(listOf(colors.primary.copy(alpha = 0.55f), glass.cardBorderBottom)), shape)
     ) {
         val h = maxHeight
+        val w = maxWidth
         val roomy = h >= 300.dp
         val tight = h < 210.dp
-        val artSize = when { roomy -> 104.dp; tight -> 52.dp; else -> 72.dp }
+        val artSize = minOf(when { roomy -> 104.dp; tight -> 52.dp; else -> 72.dp }, w * 0.28f)
+        // Volume buttons beside the transport only when the row has room for five buttons.
+        val sideVolume = !roomy && !tight && w >= 380.dp
         val playSize = when { roomy -> 88.dp; tight -> 56.dp; else -> 72.dp }
         val sideSize = when { roomy -> 64.dp; tight -> 48.dp; else -> 56.dp }
 
@@ -385,7 +388,8 @@ fun MusicPanel(modifier: Modifier = Modifier) {
                 Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("NOW PLAYING", fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.4.sp, color = colors.primary, modifier = Modifier.weight(1f))
+                            letterSpacing = 1.4.sp, color = colors.primary, maxLines = 1, softWrap = false,
+                            overflow = TextOverflow.Clip, modifier = Modifier.weight(1f))
                         Equalizer(playing)
                     }
                     Text(
@@ -414,7 +418,7 @@ fun MusicPanel(modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (!roomy && !tight) {
+                if (sideVolume) {
                     RoundButton(R.drawable.ic_volume_down, "Volume down", sideSize, repeat = true) {
                         RideMedia.nudgeVolume(-1); send("vol_down")
                     }
@@ -422,7 +426,7 @@ fun MusicPanel(modifier: Modifier = Modifier) {
                 RoundButton(R.drawable.ic_prev, "Previous", sideSize) { send("prev") }
                 PlayButton(playing, playSize) { send("toggle") }
                 RoundButton(R.drawable.ic_next, "Next", sideSize) { send("next") }
-                if (!roomy && !tight) {
+                if (sideVolume) {
                     RoundButton(R.drawable.ic_volume_up, "Volume up", sideSize, repeat = true) {
                         RideMedia.nudgeVolume(+1); send("vol_up")
                     }

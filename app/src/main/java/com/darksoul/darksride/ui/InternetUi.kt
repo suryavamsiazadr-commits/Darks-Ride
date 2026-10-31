@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -59,7 +60,7 @@ fun InternetCard(mode: AppMode) {
     CollapsibleCard(
         title = "Bike internet",
         stateKey = "internet",
-        defaultOpen = !online,
+        defaultOpen = mode == AppMode.RIDE && !online,
         titleColor = if (online) Go else null,
         summary = headline + if (!helper) " · auto-tap off" else ""
     ) {
@@ -85,8 +86,10 @@ fun InternetCard(mode: AppMode) {
             })
         }
 
-        Body(internetSteps(mode, AppPrefs.peerName(context)), dim = true)
-        BigButton(
+        var steps by remember { mutableStateOf(false) }
+        TextButton(onClick = { steps = !steps }) { Text(if (steps) "Hide how it works" else "How it works ›") }
+        if (steps) Body(internetSteps(mode, AppPrefs.peerName(context)), dim = true)
+        if (steps) BigButton(
             if (mode == AppMode.MAIN) "Open tethering settings" else "Open Bluetooth settings",
             secondary = true,
             onClick = {

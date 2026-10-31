@@ -104,8 +104,8 @@ class ScreenshotTest {
     fun mainRideTab() = shoot("main_ride_tab") {
         LinkState.setStatus(LinkStatus.CONNECTED, "LG Wing")
         RideColumn {
-            InternetCard(AppMode.MAIN)
             SendToBikeCard()
+            InternetCard(AppMode.MAIN)
         }
     }
 

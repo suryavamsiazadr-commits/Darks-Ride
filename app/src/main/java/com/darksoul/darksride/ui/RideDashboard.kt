@@ -191,40 +191,56 @@ private fun TopStrip() {
 
 // ---------- Pieces ----------
 
-/** Title, link status, internet dot and the gear (or Close on the small screen). */
+/** Title, one status chip (link + internet) and the gear (or Close on the small screen). */
 @Composable
 private fun RideTopBar(title: String, onSettings: (() -> Unit)?, onClose: (() -> Unit)?, big: Boolean) {
     val status by LinkState.status.collectAsState()
-    val peer by LinkState.peerName.collectAsState()
     val bt by BikeNet.btInternet.collectAsState()
     val wifi by BikeNet.wifi.collectAsState()
     val colors = MaterialTheme.colorScheme
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, fontSize = if (big) 26.sp else 18.sp, fontWeight = FontWeight.Bold, color = colors.primary,
-            maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-        StatusPill(status, peer, AppMode.RIDE)
-        // Internet: green when online through the main phone or Wi-Fi.
-        val online = bt || wifi
-        Row(
-            modifier = Modifier.padding(start = 8.dp).clip(RoundedCornerShape(50))
-                .background(LocalGlass.current.card)
-                .border(1.dp, (if (online) Go else Color.Gray).copy(alpha = 0.6f), RoundedCornerShape(50))
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(if (online) Go else Color.Gray))
-            Text(if (bt) " Net" else if (wifi) " Wi-Fi" else " No net", fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold, color = colors.onSurface, maxLines = 1)
-        }
-        if (onSettings != null) {
-            IconButton(onClick = onSettings) {
-                Icon(painterResource(R.drawable.ic_settings), contentDescription = "Settings",
-                    tint = colors.onSurface.copy(alpha = 0.8f))
+    val linked = status == LinkStatus.CONNECTED
+    val online = bt || wifi
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val showTitle = maxWidth >= 340.dp
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            if (showTitle) {
+                Text(title, fontSize = if (big) 24.sp else 18.sp, fontWeight = FontWeight.Bold, color = colors.primary,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            } else {
+                Box(Modifier.weight(1f))
             }
+            Row(
+                modifier = Modifier.clip(RoundedCornerShape(50))
+                    .background(LocalGlass.current.card)
+                    .border(1.dp, colors.onSurface.copy(alpha = 0.15f), RoundedCornerShape(50))
+                    .padding(horizontal = 12.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Dot(if (linked) Go else colors.primary)
+                Text(if (linked) " Linked" else " Waiting", fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                    color = colors.onSurface, maxLines = 1)
+                Text("   ", fontSize = 13.sp)
+                Dot(if (online) Go else Color.Gray)
+                Text(if (bt) " Net" else if (wifi) " Wi-Fi" else " No net", fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold, color = colors.onSurface, maxLines = 1)
+            }
+            if (onSettings != null) {
+                IconButton(onClick = onSettings) {
+                    Icon(painterResource(R.drawable.ic_settings), contentDescription = "Settings",
+                        tint = colors.onSurface.copy(alpha = 0.8f))
+                }
+            }
+            if (onClose != null) TextButton(onClick = onClose) { Text("Close") }
         }
-        if (onClose != null) TextButton(onClick = onClose) { Text("Close") }
     }
 }
+
+@Composable
+private fun Dot(color: Color) = Box(Modifier.size(8.dp).clip(CircleShape).background(color))
+
+/** Green that stays readable on white in daylight. */
+@Composable
+private fun routeGreen(): Color = if (LocalGlass.current.isDark) Go else Color(0xFF138A4A)
 
 /** A message, Android Auto style: who, what, and one big Dismiss. */
 @Composable
@@ -244,7 +260,7 @@ private fun MessagePanel(n: RideNotif, spotlight: Boolean, modifier: Modifier, m
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Avatar(n.title, colors.primary, pulse = false, size = 44.dp)
-            Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(start = 6.dp)) {
                 Text(n.title, fontSize = 19.sp, fontWeight = FontWeight.Bold, color = colors.onSurface,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
@@ -252,11 +268,18 @@ private fun MessagePanel(n: RideNotif, spotlight: Boolean, modifier: Modifier, m
                     fontSize = 13.sp, color = colors.primary, maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
             }
-            TextButton(onClick = { RideNotifications.dismissEverywhere(context, n.id) }) { Text("Dismiss") }
         }
         if (n.text.isNotBlank()) {
             Text(n.text, fontSize = 16.sp, color = colors.onSurface.copy(alpha = 0.9f),
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+        Box(
+            modifier = Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(50))
+                .background(colors.onSurface.copy(alpha = 0.10f))
+                .rideTap(onTap = { RideNotifications.dismissEverywhere(context, n.id) }),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Dismiss", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
         }
     }
 }
@@ -270,10 +293,11 @@ private fun RoutePanel(modifier: Modifier, slim: Boolean = false) {
     val last by RideNav.last.collectAsState()
     val d = last
     val shape = RoundedCornerShape(24.dp)
+    val green = routeGreen()
     Column(
         modifier = modifier
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(Go.copy(alpha = 0.16f), glass.card)))
+            .background(Brush.verticalGradient(listOf(green.copy(alpha = 0.16f), glass.card)))
             .border(1.dp, glass.cardBorderTop, shape)
             .padding(if (slim) 12.dp else 14.dp),
         verticalArrangement = if (slim) Arrangement.Top else Arrangement.SpaceBetween
@@ -281,7 +305,7 @@ private fun RoutePanel(modifier: Modifier, slim: Boolean = false) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(if (d != null) "GOING TO" else "NAVIGATION", fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.4.sp, color = Go)
+                    letterSpacing = 1.4.sp, color = green)
                 Text(d?.name ?: "No route yet", fontSize = if (slim) 18.sp else 21.sp, fontWeight = FontWeight.Bold,
                     color = colors.onSurface, maxLines = if (slim) 1 else 2, overflow = TextOverflow.Ellipsis)
                 val sub = when {
@@ -291,6 +315,17 @@ private fun RoutePanel(modifier: Modifier, slim: Boolean = false) {
                 }
                 if (sub != null) Text(sub, fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.7f),
                     maxLines = if (slim) 1 else 2, overflow = TextOverflow.Ellipsis)
+                if (!slim && d != null) {
+                    val details = listOfNotNull(
+                        d.address?.takeIf { d.via != null },
+                        d.from?.let { "From $it" },
+                        "Sent " + java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date(d.sentAt))
+                    )
+                    details.forEach {
+                        Text(it, fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.6f),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
             }
             if (slim) {
                 PillButton(if (d != null) "Go" else "Maps", Go) {
