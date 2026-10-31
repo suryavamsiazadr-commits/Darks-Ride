@@ -377,7 +377,7 @@ private fun hasBluetoothAccess(c: Context): Boolean =
 
 /** Bike phone: run Dark's Ride and Google Maps side by side (Android split screen). */
 @Composable
-private fun MapsBesideCard() {
+internal fun MapsBesideCard() {
     val context = LocalContext.current
     CollapsibleCard(
         title = "Side by side with Maps",

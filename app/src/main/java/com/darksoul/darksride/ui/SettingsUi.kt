@@ -32,6 +32,7 @@ fun SettingsScreen(
         if (mode == AppMode.MAIN) {
             NotificationFilterCard()
         } else {
+            MapsBesideCard()
             SpotlightCard()
             SmallScreenCard()
         }
