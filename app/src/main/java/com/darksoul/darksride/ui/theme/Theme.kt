@@ -36,11 +36,13 @@ data class GlassColors(
     /** Warm light in the top corner of the page. */
     val ambient: Color = Color.Transparent,
     /** The faint specks behind the page: stars at night, dust in daylight. */
-    val speck: Color = Color.White
+    val speck: Color = Color.White,
+    /** Second colour of the theme, for gradients (music card). */
+    val accent2: Color = Color.White
 )
 
 // True black (no blue or grey tint): kind to OLED screens and to the eyes at night.
-private val DarkGlass = GlassColors(
+private fun darkGlass(p: RidePalette) = GlassColors(
     isDark = true,
     backgroundTop = Color(0xFF000000),
     backgroundBottom = Color(0xFF050505),
@@ -48,31 +50,33 @@ private val DarkGlass = GlassColors(
     cardHighlight = Color(0x0AFFFFFF),
     cardBorderTop = Color(0x2EFFFFFF),
     cardBorderBottom = Color(0x0AFFFFFF),
-    glow = Ember.copy(alpha = 0.55f)
+    glow = p.dark.copy(alpha = 0.55f),
+    accent2 = p.second
 )
 
-// Daylight glass: pearl page with a warm ember glow, frosted white cards with a bright glossy
-// top and a soft shadow, so the same glass feel reads in sunlight.
-private val LightGlass = GlassColors(
+// Daylight glass: pearl page with a soft glow in the theme colour, frosted white cards with a
+// bright glossy top and a soft shadow, so the same glass feel reads in sunlight.
+private fun lightGlass(p: RidePalette) = GlassColors(
     isDark = false,
     backgroundTop = Color(0xFFFDFBF9),
     backgroundBottom = Color(0xFFE7E3DF),
     card = Color(0xB3FFFFFF),
     cardHighlight = Color(0xF2FFFFFF),
     cardBorderTop = Color(0xFFFFFFFF),
-    cardBorderBottom = Color(0x1F5A3A20),
-    glow = EmberDeep.copy(alpha = 0.45f),
-    cardShadow = Color(0x405A3A20),
-    ambient = Ember.copy(alpha = 0.16f),
-    speck = Color(0xFF6B4A30)
+    cardBorderBottom = Color(0x1F3A2A20),
+    glow = p.light.copy(alpha = 0.45f),
+    cardShadow = Color(0x403A2A20),
+    ambient = p.dark.copy(alpha = 0.16f),
+    speck = Color(0xFF5A4A40),
+    accent2 = p.light
 )
 
-val LocalGlass = staticCompositionLocalOf { DarkGlass }
+val LocalGlass = staticCompositionLocalOf { darkGlass(RidePalette.EMBER) }
 
-private val DarkScheme = darkColorScheme(
-    primary = Ember,
+private fun darkScheme(p: RidePalette) = darkColorScheme(
+    primary = p.dark,
     onPrimary = Color.Black,
-    secondary = Ember,
+    secondary = p.second,
     onSecondary = Color.Black,
     background = Color(0xFF000000),
     onBackground = Ash,
@@ -84,10 +88,10 @@ private val DarkScheme = darkColorScheme(
     surfaceVariant = Color(0xFF1A1A1A)
 )
 
-private val LightScheme = lightColorScheme(
-    primary = EmberDeep,
+private fun lightScheme(p: RidePalette) = lightColorScheme(
+    primary = p.light,
     onPrimary = Color.White,
-    secondary = EmberDeep,
+    secondary = p.light,
     onSecondary = Color.White,
     background = Color(0xFFF6F6F5),
     onBackground = Ink,
@@ -106,9 +110,10 @@ fun DarksRideTheme(content: @Composable () -> Unit) {
     ThemeController.init(context)
     LightSensor()
     val dark by ThemeController.isDark.collectAsState()
-    CompositionLocalProvider(LocalGlass provides if (dark) DarkGlass else LightGlass) {
+    val palette by ThemeController.palette.collectAsState()
+    CompositionLocalProvider(LocalGlass provides if (dark) darkGlass(palette) else lightGlass(palette)) {
         MaterialTheme(
-            colorScheme = if (dark) DarkScheme else LightScheme,
+            colorScheme = if (dark) darkScheme(palette) else lightScheme(palette),
             typography = Typography,
             content = content
         )

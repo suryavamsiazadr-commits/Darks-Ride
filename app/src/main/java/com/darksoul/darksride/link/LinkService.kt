@@ -29,6 +29,7 @@ import com.darksoul.darksride.R
 import com.darksoul.darksride.media.MediaRelay
 import com.darksoul.darksride.media.RideMedia
 import com.darksoul.darksride.nav.Destination
+import com.darksoul.darksride.net.BikeNet
 import com.darksoul.darksride.nav.NavHistory
 import com.darksoul.darksride.nav.RideDestination
 import com.darksoul.darksride.nav.RideNav
@@ -169,6 +170,7 @@ class LinkService : Service() {
         callRelay = null
         RideCall.clear(this)
         RideOverlay.hideAll()
+        BikeNet.onLinkDown()
         NotifyBridge.sink = null
         RideMedia.clear()
         RideNotifications.clear()
@@ -386,6 +388,10 @@ class LinkService : Service() {
         callRelay?.ensureStarted()
         callRelay?.refresh()
         if (myRole == "ride") mainHandler.post { RidePanel.autoOpen(this@LinkService) }
+        mainHandler.post {
+            BikeNet.onLinkUp(this@LinkService, if (myRole == "ride") AppMode.RIDE else AppMode.MAIN,
+                runCatching { sock.remoteDevice }.getOrNull())
+        }
 
         val heartbeat = launch {
             while (isActive) {
@@ -418,6 +424,7 @@ class LinkService : Service() {
             RideMedia.clear()
             RideNotifications.clear()
             RideCall.clear(this@LinkService)
+            BikeNet.onLinkDown()
             LinkState.log("Disconnected from $peer")
             setStatus(LinkStatus.WAITING)
         }
@@ -446,6 +453,7 @@ class LinkService : Service() {
                 LinkState.log("Message: ${msg.optString("title")} (${msg.optString("app")})")
             }
             "notif_gone" -> RideNotifications.remove(msg.optString("id"))
+            "net", "net_need", "net_ready" -> mainHandler.post { BikeNet.handle(this, msg) }
             "notif_clear" -> {                                  // main phone
                 val ids = msg.optJSONArray("ids")
                 val keys = (0 until (ids?.length() ?: 0)).map { i -> ids!!.optString(i) }

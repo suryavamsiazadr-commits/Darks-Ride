@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import com.darksoul.darksride.AppVisibility
 import com.darksoul.darksride.MainActivity
 import com.darksoul.darksride.R
 import com.darksoul.darksride.link.LinkService
@@ -37,21 +38,14 @@ object RideCall {
             "ringing" -> {
                 val info = CallInfo(ringing = true, caller = caller, app = app, since = now)
                 _call.value = info
-                // Floating card over Maps when allowed, otherwise a pop-up notification.
-                if (RideOverlay.canShow(c)) RideOverlay.showCall(c, info)
-                else CallAlert.showRinging(c, caller, app)
+                present(c, info)
             }
             "active" -> {
                 val prev = _call.value
                 val since = if (prev != null && !prev.ringing) prev.since else now
                 val info = CallInfo(ringing = false, caller = caller, app = app, since = since)
                 _call.value = info
-                if (RideOverlay.canShow(c)) {
-                    CallAlert.cancel(c)
-                    RideOverlay.showCall(c, info)
-                } else {
-                    CallAlert.showActive(c, caller, app)
-                }
+                present(c, info)
             }
             "ended" -> {
                 _call.value = null
@@ -59,10 +53,35 @@ object RideCall {
                 RideOverlay.hideCall()
                 if (msg.optBoolean("missed")) {
                     val missed = RideNotifications.addLocal(app, caller, "Missed call")
-                    RideOverlay.showMessage(c, missed)
+                    RideOverlay.showMessage(c, missed) // skipped while the app is open
                 }
             }
         }
+    }
+
+    /**
+     * Shows the call where it's needed: inside the app when Dark's Ride is open (the call card
+     * moves to the top), otherwise floating over Maps (or a pop-up notification).
+     */
+    private fun present(c: Context, info: CallInfo) {
+        if (AppVisibility.open.value) {
+            RideOverlay.hideCall()
+            CallAlert.cancel(c)
+            return
+        }
+        if (RideOverlay.canShow(c)) {
+            CallAlert.cancel(c)
+            RideOverlay.showCall(c, info)
+        } else if (info.ringing) {
+            CallAlert.showRinging(c, info.caller, info.app)
+        } else {
+            CallAlert.showActive(c, info.caller, info.app)
+        }
+    }
+
+    /** The app opened or closed: move an ongoing call's card in or out of it. */
+    fun refresh(c: Context) {
+        _call.value?.let { present(c, it) }
     }
 
     /** Link dropped: nothing to show any more. */

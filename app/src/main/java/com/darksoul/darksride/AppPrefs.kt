@@ -101,6 +101,18 @@ object AppPrefs {
         return if (age <= PENDING_NAV_MAX_AGE) text else null
     }
 
+    // ---- Bike phone: the main phone it last linked with (for Internet access) ----
+    fun peerAddress(c: Context): String? = prefs(c).getString("peer_address", null)
+    fun peerName(c: Context): String? = prefs(c).getString("peer_name", null)
+    fun setPeer(c: Context, address: String, name: String?) = prefs(c).edit {
+        putString("peer_address", address)
+        if (name != null) putString("peer_name", name)
+    }
+
+    // ---- Ride screen: how long a new message stays at the top (seconds) ----
+    fun spotlightSeconds(c: Context): Int = prefs(c).getInt("spotlight_seconds", 10)
+    fun setSpotlightSeconds(c: Context, s: Int) = prefs(c).edit { putInt("spotlight_seconds", s.coerceIn(5, 60)) }
+
     // ---- Which cards are open on screen ----
     fun cardOpen(c: Context, key: String, default: Boolean): Boolean =
         prefs(c).getBoolean("card_$key", default)

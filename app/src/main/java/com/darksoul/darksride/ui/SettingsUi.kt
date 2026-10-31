@@ -32,6 +32,7 @@ fun SettingsScreen(
         if (mode == AppMode.MAIN) {
             NotificationFilterCard()
         } else {
+            SpotlightCard()
             SmallScreenCard()
         }
         NavHistoryCard(mode)

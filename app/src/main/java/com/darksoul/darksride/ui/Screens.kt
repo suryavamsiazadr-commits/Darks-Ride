@@ -156,6 +156,7 @@ fun LinkScreen(
 
             else -> {
                 RideModeCard(mode = mode, on = rideOn)
+                InternetCard(mode)
                 // Setup lives in Settings; it only shows here while something is missing.
                 SetupCard(mode, hideWhenComplete = true)
 

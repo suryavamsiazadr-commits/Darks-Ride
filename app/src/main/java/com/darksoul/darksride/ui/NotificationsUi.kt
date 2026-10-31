@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -78,7 +79,7 @@ fun MessagePopup() {
  * both also clear the notification on the main phone.
  */
 @Composable
-fun MessagesCard() {
+fun MessagesCard(spotlight: Boolean = false) {
     val context = LocalContext.current
     val items by RideNotifications.items.collectAsState()
     // Nothing to show: a still card, so tapping it doesn't open and close an empty box.
@@ -99,6 +100,7 @@ fun MessagesCard() {
             1 -> "1 new: ${items.first().title}"
             else -> "${items.size} new · latest: ${items.first().title}"
         },
+        highlight = spotlight,
         trailing = { _ ->
             if (items.isNotEmpty()) {
                 TextButton(onClick = { RideNotifications.clearEverywhere(context) }) { Text("Clear") }
@@ -166,5 +168,30 @@ private fun FlagRow(label: String, key: String) {
             on = it
             AppPrefs.setFlag(context, key, it)
         })
+    }
+}
+
+/** Settings (bike phone): how long a new message stays at the top of the ride screen. */
+@Composable
+fun SpotlightCard() {
+    val context = LocalContext.current
+    var seconds by remember { mutableStateOf(AppPrefs.spotlightSeconds(context).toFloat()) }
+    CollapsibleCard(
+        title = "New message spotlight",
+        stateKey = "spotlight",
+        defaultOpen = false,
+        summary = "Stays on top for ${seconds.toInt()} s"
+    ) {
+        Body("A new message moves to the top of the ride screen, then drops back below the " +
+            "music. Calls always stay on top until they end.", dim = true)
+        Text("${seconds.toInt()} seconds", fontSize = 22.sp, fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary)
+        Slider(
+            value = seconds,
+            onValueChange = { seconds = it },
+            onValueChangeFinished = { AppPrefs.setSpotlightSeconds(context, seconds.toInt()) },
+            valueRange = 5f..60f,
+            steps = 10 // 5, 10, 15 … 60
+        )
     }
 }

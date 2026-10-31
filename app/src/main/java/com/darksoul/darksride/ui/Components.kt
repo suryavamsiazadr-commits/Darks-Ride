@@ -249,7 +249,11 @@ internal fun Body(text: String, dim: Boolean = false) = Text(
 // ---------- Cards ----------
 
 @Composable
-internal fun Card(onClick: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+internal fun Card(
+    onClick: (() -> Unit)? = null,
+    accent: Color? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
     val shape = RoundedCornerShape(22.dp)
     val glass = LocalGlass.current
     // Glass-lite: translucent body, light catching the top, a thin edge brighter at the top.
@@ -265,7 +269,10 @@ internal fun Card(onClick: (() -> Unit)? = null, content: @Composable ColumnScop
         .background(glass.card)
         // Gloss: a bright sheen across the top fading into the body.
         .background(Brush.verticalGradient(0f to glass.cardHighlight, 0.45f to Color.Transparent))
-        .border(1.dp, Brush.verticalGradient(listOf(glass.cardBorderTop, glass.cardBorderBottom)), shape)
+        .then(
+            if (accent != null) Modifier.border(2.dp, accent, shape)
+            else Modifier.border(1.dp, Brush.verticalGradient(listOf(glass.cardBorderTop, glass.cardBorderBottom)), shape)
+        )
     if (onClick != null) modifier = modifier.clickable(onClick = onClick)
     Column(
         modifier = modifier.padding(18.dp),
@@ -290,6 +297,8 @@ internal fun CollapsibleCard(
     titleColor: Color? = null,
     summary: String? = null,
     trailing: (@Composable (open: Boolean) -> Unit)? = null,
+    /** Shown open with a coloured edge whatever the saved state (e.g. a new message). */
+    highlight: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val context = LocalContext.current
@@ -297,7 +306,8 @@ internal fun CollapsibleCard(
         mutableStateOf(if (persist) AppPrefs.cardOpen(context, stateKey, defaultOpen) else defaultOpen)
     }
     val colors = MaterialTheme.colorScheme
-    Card {
+    val shown = open || highlight
+    Card(accent = if (highlight) colors.primary else null) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -312,20 +322,20 @@ internal fun CollapsibleCard(
                     title, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
                     color = titleColor ?: colors.onSurface
                 )
-                if (!open && !summary.isNullOrEmpty()) {
+                if (!shown && !summary.isNullOrEmpty()) {
                     Text(
                         summary, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         color = colors.onSurface.copy(alpha = 0.65f)
                     )
                 }
             }
-            trailing?.invoke(open)
+            trailing?.invoke(shown)
             Text(
-                if (open) "▾" else "▸", fontSize = 24.sp, color = colors.primary,
+                if (shown) "▾" else "▸", fontSize = 24.sp, color = colors.primary,
                 modifier = Modifier.padding(start = 10.dp)
             )
         }
-        AnimatedVisibility(visible = open) {
+        AnimatedVisibility(visible = shown) {
             Column(
                 modifier = Modifier.padding(top = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)

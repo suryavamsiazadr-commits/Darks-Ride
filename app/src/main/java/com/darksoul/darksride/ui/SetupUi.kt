@@ -39,13 +39,15 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.darksoul.darksride.AppMode
 import com.darksoul.darksride.AppPrefs
+import com.darksoul.darksride.net.AutoTap
+import com.darksoul.darksride.net.BikeNet
 import com.darksoul.darksride.overlay.RideOverlay
 import com.darksoul.darksride.phone.CallRelay
 import com.darksoul.darksride.phone.PhoneListenerService
 import com.darksoul.darksride.ui.theme.Go
 
 /** The things a phone needs before Dark's Ride works fully. */
-private enum class Step { BLUETOOTH, RIDE_PHONE, BACKGROUND, NOTIFICATIONS, CALLS, OVERLAY }
+private enum class Step { BLUETOOTH, RIDE_PHONE, BACKGROUND, NOTIFICATIONS, CALLS, OVERLAY, INTERNET, AUTO_TAP }
 
 private data class SetupItem(val step: Step, val label: String, val done: Boolean, val optional: Boolean = false)
 
@@ -87,6 +89,10 @@ fun SetupCard(mode: AppMode, hideWhenComplete: Boolean = false) {
                 Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS), appInfo(context))
             Step.OVERLAY -> launchFirst({ settings.launch(it) }, RideOverlay.permissionIntent(context),
                 appInfo(context))
+            Step.INTERNET -> launchFirst({ settings.launch(it) },
+                if (mode == AppMode.MAIN) BikeNet.tetherIntent(context) else Intent(Settings.ACTION_BLUETOOTH_SETTINGS),
+                Intent(Settings.ACTION_WIRELESS_SETTINGS))
+            Step.AUTO_TAP -> launchFirst({ settings.launch(it) }, AutoTap.settingsIntent(), appInfo(context))
             Step.BLUETOOTH, Step.RIDE_PHONE -> Unit // handled earlier on the screen
         }
     }
@@ -189,6 +195,21 @@ private fun SetupDialog(
                 "On the next screen turn it on for Dark's Ride.\n\n$restricted",
             "Open settings"
         )
+        Step.INTERNET -> Triple(
+            "Internet over Bluetooth",
+            internetSteps(mode, AppPrefs.peerName(LocalContext.current)) +
+                "\n\nThis gets a tick the first time the bike goes online through Bluetooth.",
+            if (mode == AppMode.MAIN) "Open tethering" else "Open Bluetooth"
+        )
+        Step.AUTO_TAP -> Triple(
+            "Auto-tap helper",
+            "Android doesn't let apps switch on " +
+                (if (mode == AppMode.MAIN) "Bluetooth tethering" else "Internet access") +
+                ", so Dark's Ride taps that one switch for you: it opens the Settings page for a " +
+                "second, taps it and goes back. It only works inside Settings and reads nothing else.\n\n" +
+                "On the next screen: Installed apps (or Downloaded apps) → Dark's Ride auto-tap → On.\n\n$restricted",
+            "Open settings"
+        )
         Step.BLUETOOTH, Step.RIDE_PHONE -> Triple("Setup", "", "OK")
     }
     AlertDialog(
@@ -198,7 +219,7 @@ private fun SetupDialog(
         confirmButton = { TextButton(onClick = onGo) { Text(button) } },
         dismissButton = {
             Row {
-                if (step == Step.NOTIFICATIONS || step == Step.OVERLAY) {
+                if (step == Step.NOTIFICATIONS || step == Step.OVERLAY || step == Step.AUTO_TAP) {
                     TextButton(onClick = onAppInfo) { Text("App info") }
                 }
                 TextButton(onClick = onDismiss) { Text("Not now") }
@@ -218,12 +239,16 @@ private fun setupItems(c: Context, mode: AppMode): List<SetupItem> {
             SetupItem(Step.BACKGROUND, "Background running", background),
             SetupItem(Step.NOTIFICATIONS, "Music and messages", PhoneListenerService.hasAccess(c)),
             SetupItem(Step.CALLS, "Calls", CallRelay.hasCallAccess(c)),
+            SetupItem(Step.INTERNET, "Bike internet (Bluetooth tethering)", BikeNet.workedOnce(c)),
+            SetupItem(Step.AUTO_TAP, "Auto-tap helper for tethering", AutoTap.isEnabled(c)),
             SetupItem(Step.OVERLAY, "Answer WhatsApp calls", RideOverlay.canShow(c), optional = true)
         )
         AppMode.RIDE -> listOf(
             SetupItem(Step.BLUETOOTH, "Bluetooth access", bluetooth),
             SetupItem(Step.BACKGROUND, "Background running", background),
-            SetupItem(Step.OVERLAY, "Cards over Google Maps", RideOverlay.canShow(c))
+            SetupItem(Step.OVERLAY, "Cards over Google Maps", RideOverlay.canShow(c)),
+            SetupItem(Step.INTERNET, "Internet from your ${RoleNames.MAIN}", BikeNet.workedOnce(c)),
+            SetupItem(Step.AUTO_TAP, "Auto-tap helper for internet", AutoTap.isEnabled(c))
         )
     }
 }

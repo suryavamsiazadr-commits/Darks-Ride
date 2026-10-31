@@ -2,7 +2,23 @@ package com.darksoul.darksride.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import com.darksoul.darksride.ui.theme.LocalGlass
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +50,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.darksoul.darksride.AppPrefs
 import com.darksoul.darksride.link.LinkService
+import com.darksoul.darksride.phone.RideNotifications
 import com.darksoul.darksride.overlay.RideOverlay
 import com.darksoul.darksride.phone.CallInfo
 import com.darksoul.darksride.phone.CallRelay
@@ -43,41 +61,60 @@ import com.darksoul.darksride.ui.theme.Go
 import com.darksoul.darksride.ui.theme.Stop
 import kotlinx.coroutines.delay
 
-/** Everything below the status on the ride screen: a call takes over while it lasts. */
+/**
+ * The ride screen's cards, in order of what matters right now:
+ *  1. a call, from the first ring until it ends,
+ *  2. a new message, for the spotlight time set in Settings (5–60 s, default 10),
+ *  3. music (always first otherwise), then navigation, then older messages.
+ */
 @Composable
 fun RideContent() {
+    val context = LocalContext.current
     val call by RideCall.call.collectAsState()
-    val c = call
-    if (c != null) {
-        CallCard(c)
-    } else {
-        MessagePopup()
-        DestinationCard()
-        NowPlayingCard()
-        MessagesCard()
+    val popup by RideNotifications.popup.collectAsState()
+    val fresh = popup
+    LaunchedEffect(fresh?.id, fresh?.text) {
+        if (fresh == null) return@LaunchedEffect
+        delay(AppPrefs.spotlightSeconds(context) * 1_000L)
+        RideNotifications.dismissPopup(fresh.id)
     }
+    val spotlight = fresh != null
+
+    AnimatedVisibility(visible = call != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+        call?.let { CallCard(it) }
+    }
+    if (spotlight) MessagesCard(spotlight = true)
+    NowPlayingCard()
+    DestinationCard()
+    if (!spotlight) MessagesCard()
 }
 
 @Composable
 private fun CallCard(call: CallInfo) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(24.dp)
+    val glass = LocalGlass.current
+    val shape = RoundedCornerShape(28.dp)
     val send = { action: String -> LinkService.sendCommand(context, action) }
+    val tint = if (call.ringing) Go else colors.primary
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(16.dp, shape, ambientColor = tint.copy(alpha = 0.5f), spotColor = tint.copy(alpha = 0.5f))
             .clip(shape)
-            .background(colors.surface)
-            .border(2.dp, if (call.ringing) Go else colors.primary, shape)
-            .padding(24.dp),
+            .background(Brush.verticalGradient(listOf(tint.copy(alpha = 0.22f), glass.backgroundTop.copy(alpha = 0.9f))))
+            .border(1.dp, tint.copy(alpha = 0.6f), shape)
+            .padding(22.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        Avatar(call.caller, tint, pulse = call.ringing)
         Text(
-            (if (call.ringing) "Incoming call" else "On call") + " · ${call.app}",
-            fontSize = 18.sp, color = colors.primary, fontWeight = FontWeight.SemiBold
+            ((if (call.ringing) "INCOMING" else "ON CALL") + " · ${call.app}").uppercase(),
+            fontSize = 13.sp, color = tint, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp,
+            modifier = Modifier.clip(RoundedCornerShape(50)).background(tint.copy(alpha = 0.15f))
+                .padding(horizontal = 12.dp, vertical = 4.dp)
         )
         Text(
             call.caller, fontSize = 34.sp, fontWeight = FontWeight.Bold,
@@ -89,15 +126,43 @@ private fun CallCard(call: CallInfo) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                CallButton("Reject", Stop, Modifier.weight(1f)) { send("reject") }
-                CallButton("Answer", Go, Modifier.weight(1f)) { send("answer") }
+                CallButton("✕  Decline", Stop, Modifier.weight(1f)) { send("reject") }
+                CallButton("✓  Answer", Go, Modifier.weight(1f)) { send("answer") }
             }
         } else {
             CallTimer(call.since)
-            CallButton("End call", Stop, Modifier.fillMaxWidth().padding(top = 16.dp)) { send("end") }
+            CallButton("End call", Stop, Modifier.fillMaxWidth().padding(top = 12.dp), height = 88.dp) { send("end") }
+        }
+    }
+}
+
+/** First letter of the caller in a gradient circle; a soft ring pulses while it rings. */
+@Composable
+private fun Avatar(name: String, tint: Color, pulse: Boolean) {
+    val ring = rememberInfiniteTransition(label = "ring")
+    val scale by ring.animateFloat(
+        initialValue = 1f, targetValue = if (pulse) 1.35f else 1f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "scale"
+    )
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(104.dp)) {
+        if (pulse) {
+            Box(
+                Modifier.size(80.dp).scale(scale).clip(CircleShape)
+                    .background(tint.copy(alpha = (1.35f - scale).coerceIn(0f, 0.4f)))
+            )
+        }
+        Box(
+            modifier = Modifier.size(80.dp).clip(CircleShape)
+                .background(Brush.linearGradient(listOf(tint, tint.copy(alpha = 0.6f)))),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                name.trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•",
+                fontSize = 34.sp, fontWeight = FontWeight.Bold, color = Color.White
+            )
         }
     }
 }
@@ -123,14 +188,15 @@ private fun CallButton(
     label: String,
     color: Color,
     modifier: Modifier,
-    height: Dp = 110.dp,
+    height: Dp = 100.dp,
     onClick: () -> Unit
 ) {
     Box(
         modifier = modifier
             .height(height)
-            .clip(RoundedCornerShape(24.dp))
-            .background(color)
+            .shadow(8.dp, RoundedCornerShape(50), ambientColor = color, spotColor = color)
+            .clip(RoundedCornerShape(50))
+            .background(Brush.verticalGradient(listOf(color, color.copy(red = color.red * 0.8f, green = color.green * 0.8f, blue = color.blue * 0.8f))))
             .rideTap(onTap = onClick),
         contentAlignment = Alignment.Center
     ) {

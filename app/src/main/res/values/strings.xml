@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Dark\'s Ride</string>
+    <string name="auto_tap_label">Dark\'s Ride auto-tap</string>
+    <string name="auto_tap_description">Turns on Bluetooth tethering (main phone) and Internet access (bike phone) for you, so the bike gets internet without a hotspot. It only acts inside Android Settings, only when Dark\'s Ride asks, and reads nothing else.</string>
 </resources>

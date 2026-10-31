@@ -37,6 +37,16 @@ object ThemeController {
     private val _choice = MutableStateFlow(ThemeChoice.AUTO)
     val choice: StateFlow<ThemeChoice> = _choice.asStateFlow()
 
+    private const val KEY_PALETTE = "theme_palette"
+    private val _palette = MutableStateFlow(RidePalette.EMBER)
+    /** Which of the four ride themes. */
+    val palette: StateFlow<RidePalette> = _palette.asStateFlow()
+
+    fun setPalette(c: Context, p: RidePalette) {
+        c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putString(KEY_PALETTE, p.name) }
+        _palette.value = p
+    }
+
     private val _isDark = MutableStateFlow(true)
     val isDark: StateFlow<Boolean> = _isDark.asStateFlow()
 
@@ -57,7 +67,10 @@ object ThemeController {
     fun init(c: Context) {
         if (initialised) return
         initialised = true
-        val saved = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null)
+        val prefs = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        _palette.value = RidePalette.entries.firstOrNull { it.name == prefs.getString(KEY_PALETTE, null) }
+            ?: RidePalette.EMBER
+        val saved = prefs.getString(KEY, null)
         _choice.value = ThemeChoice.entries.firstOrNull { it.name == saved } ?: ThemeChoice.AUTO
         val systemDark = (c.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
             Configuration.UI_MODE_NIGHT_YES

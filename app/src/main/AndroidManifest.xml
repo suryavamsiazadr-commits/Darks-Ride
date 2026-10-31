@@ -20,6 +20,8 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Main phone: open Google Maps short links to find a shared place's exact location -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Bike phone: notice when Bluetooth internet from the main phone comes and goes -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Start the link by itself after the phone restarts -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -111,6 +113,19 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+        <!-- Auto-tap helper for Bluetooth tethering (opt-in, Settings app only) -->
+        <service
+            android:name=".net.AutoTapService"
+            android:exported="false"
+            android:label="@string/auto_tap_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/auto_tap" />
+        </service>
     </application>
 
 </manifest>

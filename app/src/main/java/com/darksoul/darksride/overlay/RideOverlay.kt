@@ -1,5 +1,6 @@
 package com.darksoul.darksride.overlay
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -19,9 +20,14 @@ import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.LinearInterpolator
+import android.widget.FrameLayout
 import android.widget.Chronometer
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.darksoul.darksride.AppPrefs
+import com.darksoul.darksride.AppVisibility
 import com.darksoul.darksride.link.LinkService
 import com.darksoul.darksride.phone.CallInfo
 import com.darksoul.darksride.phone.RideNotif
@@ -38,7 +44,6 @@ import java.util.Locale
  */
 @SuppressLint("ClickableViewAccessibility") // ride buttons fire on touch-down on purpose
 object RideOverlay {
-    private const val MESSAGE_SECONDS = 8_000L
     private const val MAX_WIDTH_DP = 640
 
     private val main = Handler(Looper.getMainLooper())
@@ -49,15 +54,19 @@ object RideOverlay {
     private var messageView: View? = null
     private val hideMessage = Runnable { removeMessage() }
 
-    // Palette (matches the app theme)
-    // Card colours follow the app's light / dark theme (light sensor in Auto).
+    // Colours follow the app: light / dark (light sensor in Auto) and the chosen ride theme.
     private val dark: Boolean get() = ThemeController.isDark.value
-    private val SURFACE: Int get() = if (dark) 0xF20A0A0A.toInt() else 0xF7FFFFFF.toInt()
+    private val SURFACE_TOP: Int get() = if (dark) 0xF21A1A1C.toInt() else 0xFAFFFFFF.toInt()
+    private val SURFACE_BOTTOM: Int get() = if (dark) 0xF7070708.toInt() else 0xF5F3F1EF.toInt()
+    private val EDGE: Int get() = if (dark) 0x33FFFFFF else 0x1A000000
     private val TEXT: Int get() = if (dark) 0xFFFFFFFF.toInt() else 0xFF15161A.toInt()
     private val SUBTLE: Int get() = if (dark) 0xB3FFFFFF.toInt() else 0x9915161A.toInt()
-    private val EMBER = 0xFFFF7A1A.toInt()
-    private val GO = 0xFF3DDC84.toInt()
-    private val STOP = 0xFFE5484D.toInt()
+    private val ACCENT: Int get() = ThemeController.palette.value.argb(dark)
+    private val ACCENT2: Int get() = ThemeController.palette.value.secondArgb()
+    private val GO = 0xFF2FD27A.toInt()
+    private val GO_2 = 0xFF19A35A.toInt()
+    private val STOP = 0xFFFF4D57.toInt()
+    private val STOP_2 = 0xFFD12B3A.toInt()
     private val WHITE = 0xFFFFFFFF.toInt()
 
     fun canShow(c: Context): Boolean = Settings.canDrawOverlays(c)
@@ -71,7 +80,7 @@ object RideOverlay {
     fun showCall(c: Context, call: CallInfo) {
         val app = c.applicationContext
         main.post {
-            if (!canShow(app)) return@post
+            if (!canShow(app) || AppVisibility.open.value) return@post
             removeMessage()
             removeCall()
             val ctx = context(app) ?: return@post
@@ -89,11 +98,12 @@ object RideOverlay {
     fun showMessage(c: Context, n: RideNotif) {
         val app = c.applicationContext
         main.post {
-            if (!canShow(app) || callView != null) return@post
+            if (!canShow(app) || callView != null || AppVisibility.open.value) return@post
             removeMessage()
             val ctx = context(app) ?: return@post
-            messageView = add(ctx, messageCard(ctx, n), topMarginDp = 44)
-            main.postDelayed(hideMessage, MESSAGE_SECONDS)
+            val millis = AppPrefs.spotlightSeconds(app) * 1_000L
+            messageView = add(ctx, messageCard(ctx, n, millis), topMarginDp = 44)
+            main.postDelayed(hideMessage, millis)
         }
     }
 
@@ -106,58 +116,165 @@ object RideOverlay {
 
     // ---------- Building the cards (plain Android views: work outside the app) ----------
 
+    /** Incoming call: avatar with a pulsing ring, the caller, big Decline / Answer pills. */
     private fun ringingCard(ctx: Context, app: Context, call: CallInfo): View =
-        card(ctx, borderColor = GO).apply {
-            addView(label(ctx, "Incoming call · ${call.app}", EMBER, 16f, bold = true))
-            addView(label(ctx, call.caller, TEXT, 30f, bold = true))
+        card(ctx).apply {
             addView(LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
-                setPadding(0, dp(ctx, 16), 0, 0)
-                addView(button(ctx, "Reject", STOP, 84) { LinkService.sendCommand(app, "reject") },
-                    weighted(ctx, endMarginDp = 8))
-                addView(button(ctx, "Answer", GO, 84) { LinkService.sendCommand(app, "answer") },
-                    weighted(ctx, startMarginDp = 8))
+                gravity = Gravity.CENTER_VERTICAL
+                addView(avatar(ctx, call.caller, 64, pulse = true))
+                addView(LinearLayout(ctx).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(ctx, 16), 0, 0, 0)
+                    addView(chip(ctx, "INCOMING · ${call.app.uppercase()}", GO))
+                    addView(label(ctx, call.caller, TEXT, 28f, bold = true).apply { setPadding(0, dp(ctx, 4), 0, 0) })
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            })
+            addView(LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(ctx, 18), 0, 0)
+                addView(pill(ctx, "✕  Decline", STOP, STOP_2, 80) { LinkService.sendCommand(app, "reject") },
+                    weighted(ctx, endMarginDp = 7))
+                addView(pill(ctx, "✓  Answer", GO, GO_2, 80) { LinkService.sendCommand(app, "answer") },
+                    weighted(ctx, startMarginDp = 7))
             })
         }
 
+    /** During a call: a slim bar with a live dot, the caller, the timer and a round End button. */
     private fun onCallBar(ctx: Context, app: Context, call: CallInfo): View =
-        card(ctx, borderColor = EMBER).apply {
+        card(ctx, padDp = 14).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            addView(View(ctx).apply {
+                background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(GO) }
+                pulse(this)
+            }, LinearLayout.LayoutParams(dp(ctx, 12), dp(ctx, 12)).apply { marginStart = dp(ctx, 6); marginEnd = dp(ctx, 14) })
             addView(LinearLayout(ctx).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(label(ctx, call.caller, TEXT, 22f, bold = true))
+                addView(label(ctx, call.caller, TEXT, 20f, bold = true))
                 addView(Chronometer(ctx).apply {
                     setTextColor(SUBTLE)
-                    textSize = 18f
+                    textSize = 16f
                     base = SystemClock.elapsedRealtime() - (System.currentTimeMillis() - call.since)
                     start()
                 })
             }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(button(ctx, "End call", STOP, 64) { LinkService.sendCommand(app, "end") }.apply {
-                setPadding(dp(ctx, 28), 0, dp(ctx, 28), 0)
+            addView(pill(ctx, "End", STOP, STOP_2, 60) { LinkService.sendCommand(app, "end") }.apply {
+                setPadding(dp(ctx, 30), 0, dp(ctx, 30), 0)
             })
         }
 
-    private fun messageCard(ctx: Context, n: RideNotif): View =
-        card(ctx, borderColor = EMBER).apply {
+    /** A message: avatar, app and time, sender, text, and a bar showing how long it stays. */
+    private fun messageCard(ctx: Context, n: RideNotif, millis: Long): View =
+        card(ctx, padDp = 16).apply {
             val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(n.time))
-            addView(label(ctx, "${n.app} · $time", EMBER, 15f, bold = true))
-            addView(label(ctx, n.title, TEXT, 22f, bold = true))
-            addView(label(ctx, n.text, TEXT, 18f, bold = false, lines = 2))
+            addView(LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.TOP
+                addView(avatar(ctx, n.title, 52, pulse = false))
+                addView(LinearLayout(ctx).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(ctx, 14), 0, 0, 0)
+                    addView(LinearLayout(ctx).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_VERTICAL
+                        addView(chip(ctx, n.app.uppercase(), ACCENT))
+                        addView(label(ctx, "  $time", SUBTLE, 13f, bold = false))
+                    })
+                    addView(label(ctx, n.title, TEXT, 20f, bold = true).apply { setPadding(0, dp(ctx, 4), 0, 0) })
+                    if (n.text.isNotBlank()) addView(label(ctx, n.text, TEXT, 17f, bold = false, lines = 2).apply { alpha = 0.9f })
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            })
+            // Time left: a thin bar in the theme colours that shrinks to nothing.
+            addView(View(ctx).apply {
+                background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, intArrayOf(ACCENT, ACCENT2)).apply {
+                    cornerRadius = dp(ctx, 2).toFloat()
+                }
+                pivotX = 0f
+                ValueAnimator.ofFloat(1f, 0f).apply {
+                    duration = millis
+                    interpolator = LinearInterpolator()
+                    addUpdateListener { scaleX = it.animatedValue as Float }
+                    start()
+                }
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 4)).apply { topMargin = dp(ctx, 14) })
             setOnClickListener { removeMessage() }
         }
 
-    private fun card(ctx: Context, borderColor: Int) = LinearLayout(ctx).apply {
+    /** The card: dark (or frosted white) glass with a hairline edge and a soft shadow. */
+    private fun card(ctx: Context, padDp: Int = 20) = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL
-        val pad = dp(ctx, 20)
+        val pad = dp(ctx, padDp)
         setPadding(pad, pad, pad, pad)
-        background = GradientDrawable().apply {
-            setColor(SURFACE)
-            cornerRadius = dp(ctx, 24).toFloat()
-            setStroke(dp(ctx, 3), borderColor)
+        background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(SURFACE_TOP, SURFACE_BOTTOM)).apply {
+            cornerRadius = dp(ctx, 28).toFloat()
+            setStroke(dp(ctx, 1), EDGE)
         }
-        elevation = dp(ctx, 8).toFloat()
+        elevation = dp(ctx, 18).toFloat()
+        // Slide down and fade in.
+        alpha = 0f
+        translationY = -dp(ctx, 24).toFloat()
+        animate().alpha(1f).translationY(0f).setDuration(220).setInterpolator(DecelerateInterpolator()).start()
+    }
+
+    /** Round badge with the first letter of the name, in the theme gradient. */
+    private fun avatar(ctx: Context, name: String, sizeDp: Int, pulse: Boolean): View {
+        val size = dp(ctx, sizeDp)
+        val frame = FrameLayout(ctx)
+        if (pulse) {
+            frame.addView(View(ctx).apply {
+                background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(GO) }
+                alpha = 0.35f
+                ValueAnimator.ofFloat(1f, 1.35f).apply {
+                    duration = 900
+                    repeatMode = ValueAnimator.REVERSE
+                    repeatCount = ValueAnimator.INFINITE
+                    addUpdateListener { scaleX = it.animatedValue as Float; scaleY = scaleX; alpha = 1.35f - scaleX }
+                }.stopWith(this).start()
+            }, FrameLayout.LayoutParams(size, size))
+        }
+        frame.addView(TextView(ctx).apply {
+            text = name.trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•"
+            setTextColor(WHITE)
+            textSize = sizeDp * 0.42f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                intArrayOf(if (pulse) GO else ACCENT, if (pulse) GO_2 else ACCENT2)).apply { shape = GradientDrawable.OVAL }
+        }, FrameLayout.LayoutParams(size, size))
+        return frame
+    }
+
+    /** Small rounded tag: "WHATSAPP", "INCOMING · PHONE". */
+    private fun chip(ctx: Context, text: String, color: Int) = TextView(ctx).apply {
+        this.text = text
+        setTextColor(color)
+        textSize = 11f
+        letterSpacing = 0.08f
+        typeface = Typeface.DEFAULT_BOLD
+        setPadding(dp(ctx, 10), dp(ctx, 3), dp(ctx, 10), dp(ctx, 3))
+        background = GradientDrawable().apply {
+            cornerRadius = dp(ctx, 50).toFloat()
+            setColor((color and 0x00FFFFFF) or 0x26000000)
+        }
+        maxLines = 1
+    }
+
+    private fun pulse(v: View) {
+        ValueAnimator.ofFloat(1f, 0.25f).apply {
+            duration = 700
+            repeatMode = ValueAnimator.REVERSE
+            repeatCount = ValueAnimator.INFINITE
+            addUpdateListener { v.alpha = it.animatedValue as Float }
+        }.stopWith(v).start()
+    }
+
+    /** Endless animations end when their card is taken off the screen. */
+    private fun ValueAnimator.stopWith(v: View): ValueAnimator = also { anim ->
+        v.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(view: View) = Unit
+            override fun onViewDetachedFromWindow(view: View) = anim.cancel()
+        })
     }
 
     private fun label(
@@ -171,24 +288,27 @@ object RideOverlay {
         ellipsize = TextUtils.TruncateAt.END
     }
 
-    private fun button(
-        ctx: Context, text: String, color: Int, heightDp: Int, onClick: () -> Unit
+    /** A big pill button with a gradient. Fires on touch-down with a tick: easy with gloves. */
+    private fun pill(
+        ctx: Context, text: String, color: Int, color2: Int, heightDp: Int, onClick: () -> Unit
     ) = TextView(ctx).apply {
         this.text = text
         setTextColor(WHITE)
-        textSize = 22f
+        textSize = 21f
         typeface = Typeface.DEFAULT_BOLD
         gravity = Gravity.CENTER
         minHeight = dp(ctx, heightDp)
-        background = GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(ctx, 20).toFloat()
+        background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(color, color2)).apply {
+            cornerRadius = dp(ctx, heightDp).toFloat()
         }
+        elevation = dp(ctx, 4).toFloat()
         isClickable = true
-        // React on touch-down (not on lift) with a vibration tick: easier with gloves.
         setOnTouchListener { v, event ->
             if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                 v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                v.animate().scaleX(0.96f).scaleY(0.96f).setDuration(80).withEndAction {
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(120).start()
+                }.start()
                 onClick()
             }
             true
