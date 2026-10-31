@@ -101,6 +101,7 @@ fun MessagesCard(spotlight: Boolean = false) {
             else -> "${items.size} new · latest: ${items.first().title}"
         },
         highlight = spotlight,
+        attention = items.isNotEmpty(),
         trailing = { _ ->
             if (items.isNotEmpty()) {
                 TextButton(onClick = { RideNotifications.clearEverywhere(context) }) { Text("Clear") }

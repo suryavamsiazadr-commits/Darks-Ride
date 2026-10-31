@@ -41,6 +41,8 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Opening the app: every card starts closed.
+        if (savedInstanceState == null) com.darksoul.darksride.ui.CardMemory.reset()
         // Ride mode decides what runs in the background; opening the app doesn't change it.
         if (savedInstanceState == null && AppPrefs.linkEnabled(this)) {
             PhoneListenerService.resume(this)

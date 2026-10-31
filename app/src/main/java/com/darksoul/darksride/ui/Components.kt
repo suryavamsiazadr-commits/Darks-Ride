@@ -43,6 +43,10 @@ import kotlin.random.Random
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.painterResource
@@ -90,10 +94,102 @@ fun RideColumn(
 @Composable
 internal fun Modifier.rideBackground(): Modifier {
     val glass = LocalGlass.current
+    if (glass.soft) return this.background(glass.card) // neumorphism: one calm colour
     return this
         .background(Brush.verticalGradient(listOf(glass.backgroundTop, glass.backgroundBottom)))
         .ambientGlow(glass.ambient)
         .starfield(glass.isDark, glass.speck)
+}
+
+// ---------- Surfaces: glass or soft (neumorphism) ----------
+
+/**
+ * Neumorphic lift: the shape in the page colour with a light shadow to the top left and a
+ * dark one to the bottom right, so it looks pressed up out of the page.
+ */
+internal fun Modifier.neu(
+    corner: Dp,
+    elevation: Dp,
+    base: Color,
+    light: Color,
+    dark: Color,
+    circle: Boolean = false
+): Modifier = drawBehind {
+    val e = elevation.toPx()
+    val r = if (circle) minOf(size.width, size.height) / 2f else corner.toPx()
+    drawIntoCanvas { canvas ->
+        val paint = android.graphics.Paint().apply {
+            isAntiAlias = true
+            color = base.toArgb()
+        }
+        paint.setShadowLayer(e * 1.6f, -e * 0.7f, -e * 0.7f, light.toArgb())
+        canvas.nativeCanvas.drawRoundRect(0f, 0f, size.width, size.height, r, r, paint)
+        paint.setShadowLayer(e * 1.6f, e * 0.7f, e * 0.7f, dark.toArgb())
+        canvas.nativeCanvas.drawRoundRect(0f, 0f, size.width, size.height, r, r, paint)
+    }
+}
+
+/**
+ * A card's surface in the current style.
+ * Glass: see-through with a bright top edge. Soft: raised out of the page.
+ * [tint] washes the card in a colour (green for calls, theme colour for new messages),
+ * [edge] draws a coloured outline (something needs attention).
+ */
+@Composable
+internal fun Modifier.rideSurface(corner: Dp = 22.dp, tint: Color? = null, edge: Color? = null): Modifier {
+    val glass = LocalGlass.current
+    val shape = RoundedCornerShape(corner)
+    return if (glass.soft) {
+        this
+            .neu(corner, 7.dp, glass.card, glass.softLight, glass.softDark)
+            .clip(shape)
+            .background(glass.card)
+            .then(if (tint != null) Modifier.background(Brush.verticalGradient(listOf(tint.copy(alpha = 0.16f), Color.Transparent))) else Modifier)
+            .then(if (edge != null) Modifier.border(2.dp, edge, shape) else Modifier)
+    } else {
+        this
+            .then(
+                if (glass.cardShadow.alpha > 0f) Modifier.shadow(10.dp, shape, ambientColor = glass.cardShadow, spotColor = glass.cardShadow)
+                else Modifier
+            )
+            .clip(shape)
+            .background(glass.card)
+            .then(if (tint != null) Modifier.background(Brush.verticalGradient(listOf(tint.copy(alpha = 0.2f), Color.Transparent))) else Modifier)
+            .background(Brush.verticalGradient(0f to glass.cardHighlight, 0.45f to Color.Transparent))
+            .then(
+                if (edge != null) Modifier.border(if (edge.alpha >= 0.9f) 2.dp else 1.dp, edge, shape)
+                else Modifier.border(1.dp, Brush.verticalGradient(listOf(glass.cardBorderTop, glass.cardBorderBottom)), shape)
+            )
+    }
+}
+
+/** A round or pill button's body: frosted (glass) or raised (soft). [fill] for coloured ones. */
+@Composable
+internal fun Modifier.rideButtonSurface(circle: Boolean, fill: Brush? = null, corner: Dp = 50.dp): Modifier {
+    val glass = LocalGlass.current
+    val colors = MaterialTheme.colorScheme
+    val shape = if (circle) CircleShape else RoundedCornerShape(corner)
+    return if (glass.soft) {
+        this
+            .neu(corner, 5.dp, glass.card, glass.softLight, glass.softDark, circle = circle)
+            .clip(shape)
+            .background(fill ?: Brush.linearGradient(listOf(glass.card, glass.card)))
+    } else if (fill != null) {
+        this.clip(shape).background(fill)
+    } else {
+        this.clip(shape)
+            .background(colors.onSurface.copy(alpha = 0.09f))
+            .border(1.dp, colors.onSurface.copy(alpha = 0.12f), shape)
+    }
+}
+
+/** Which cards are open, for this visit only: every card starts closed when the app opens. */
+object CardMemory {
+    private val open = mutableMapOf<String, Boolean>()
+    fun get(key: String) = open[key] ?: false
+    fun set(key: String, value: Boolean) { open[key] = value }
+    /** The app was opened afresh: close everything. */
+    fun reset() = open.clear()
 }
 
 /** A faint field of tiny stars behind the dark theme: there if you look, never in the way. */
@@ -228,6 +324,26 @@ internal fun BigButton(
         .fillMaxWidth()
         .height(56.dp)
     val shape = RoundedCornerShape(16.dp)
+    val glass = LocalGlass.current
+    if (glass.soft) {
+        // Soft: raised pill in the page colour; main buttons filled with the theme colour.
+        val colors = MaterialTheme.colorScheme
+        Box(
+            modifier = modifier
+                .rideButtonSurface(circle = false, corner = 16.dp,
+                    fill = if (secondary) null else Brush.verticalGradient(listOf(colors.primary, glass.accent2)))
+                .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
+                color = when {
+                    !enabled -> colors.onSurface.copy(alpha = 0.35f)
+                    secondary -> colors.primary
+                    else -> colors.onPrimary
+                })
+        }
+        return
+    }
     if (secondary) {
         OutlinedButton(onClick = onClick, enabled = enabled, shape = shape, modifier = modifier) {
             Text(text, fontSize = 17.sp)
@@ -273,25 +389,7 @@ internal fun Card(
     accent: Color? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val shape = RoundedCornerShape(22.dp)
-    val glass = LocalGlass.current
-    // Glass-lite: translucent body, light catching the top, a thin edge brighter at the top.
-    var modifier = Modifier
-        .fillMaxWidth()
-        .then(
-            if (glass.cardShadow.alpha > 0f) Modifier.shadow(
-                elevation = 10.dp, shape = shape,
-                ambientColor = glass.cardShadow, spotColor = glass.cardShadow
-            ) else Modifier
-        )
-        .clip(shape)
-        .background(glass.card)
-        // Gloss: a bright sheen across the top fading into the body.
-        .background(Brush.verticalGradient(0f to glass.cardHighlight, 0.45f to Color.Transparent))
-        .then(
-            if (accent != null) Modifier.border(2.dp, accent, shape)
-            else Modifier.border(1.dp, Brush.verticalGradient(listOf(glass.cardBorderTop, glass.cardBorderBottom)), shape)
-        )
+    var modifier = Modifier.fillMaxWidth().rideSurface(22.dp, edge = accent)
     if (onClick != null) modifier = modifier.clickable(onClick = onClick)
     Column(
         modifier = modifier.padding(18.dp),
@@ -318,12 +416,12 @@ internal fun CollapsibleCard(
     trailing: (@Composable (open: Boolean) -> Unit)? = null,
     /** Shown open with a coloured edge whatever the saved state (e.g. a new message). */
     highlight: Boolean = false,
+    /** Something here needs a look: a small dot beside the title while closed. */
+    attention: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val context = LocalContext.current
-    var open by remember(stateKey, if (persist) Unit else defaultOpen) {
-        mutableStateOf(if (persist) AppPrefs.cardOpen(context, stateKey, defaultOpen) else defaultOpen)
-    }
+    // Every card starts closed when the app opens; it stays as you leave it until then.
+    var open by remember(stateKey) { mutableStateOf(CardMemory.get(stateKey)) }
     val colors = MaterialTheme.colorScheme
     val shown = open || highlight
     Card(accent = if (highlight) colors.primary else null) {
@@ -332,15 +430,20 @@ internal fun CollapsibleCard(
                 .fillMaxWidth()
                 .clickable {
                     open = !open
-                    if (persist) AppPrefs.setCardOpen(context, stateKey, open)
+                    CardMemory.set(stateKey, open)
                 },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
-                    color = titleColor ?: colors.onSurface
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        title, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
+                        color = titleColor ?: colors.onSurface
+                    )
+                    if (attention && !shown) {
+                        Box(Modifier.padding(start = 8.dp).size(9.dp).clip(CircleShape).background(colors.primary))
+                    }
+                }
                 if (!shown && !summary.isNullOrEmpty()) {
                     Text(
                         summary, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,

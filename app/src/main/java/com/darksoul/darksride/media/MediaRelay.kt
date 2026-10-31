@@ -149,14 +149,24 @@ class MediaRelay(
             ?: meta?.getBitmap(MediaMetadata.METADATA_KEY_ART)
             ?: meta?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
 
+        val state = c.playbackState
+        val duration = meta?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
+        // Where the song is now (the app reports it at its last update; we move it on to now).
+        val position = state?.let {
+            val since = android.os.SystemClock.elapsedRealtime() - it.lastPositionUpdateTime
+            (it.position + if (playing) (since * it.playbackSpeed).toLong() else 0L).coerceAtLeast(0L)
+        } ?: 0L
+
         val artKey = "$app|$title|$artist|${art != null}"
-        val key = "$artKey|$playing|$vol"
+        // A seek or pause/play changes lastPositionUpdateTime, so the bike gets the new position.
+        val key = "$artKey|$playing|$vol|${state?.lastPositionUpdateTime}|$duration"
         if (!force && key == lastKey) return
         lastKey = key
 
         val msg = JSONObject().put("t", "media")
             .put("app", app).put("title", title).put("artist", artist)
             .put("playing", playing).put("vol", vol).put("volMax", volMax)
+            .put("pos", position).put("dur", duration).put("speed", (state?.playbackSpeed ?: 1f).toDouble())
 
         // Album art is only sent when the track changes, to keep messages small.
         if (force || artKey != lastArtKey) {
@@ -183,7 +193,7 @@ class MediaRelay(
         pkg
     }
 
-    /** Small JPEG (max 192 px) as one line of Base64. */
+    /** Small JPEG (max 360 px) as one line of Base64. */
     private fun encodeArt(source: Bitmap): String? = runCatching {
         val soft = if (source.config == Bitmap.Config.HARDWARE)
             source.copy(Bitmap.Config.ARGB_8888, false) else source
@@ -195,13 +205,13 @@ class MediaRelay(
             true
         ) else soft
         ByteArrayOutputStream().use { out ->
-            small.compress(Bitmap.CompressFormat.JPEG, 75, out)
+            small.compress(Bitmap.CompressFormat.JPEG, 80, out)
             Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
         }
     }.getOrNull()
 
     private companion object {
-        const val ART_SIZE = 192
+        const val ART_SIZE = 360 // big enough for the full-screen player
         val KNOWN_APPS = mapOf(
             "com.google.android.apps.youtube.music" to "YouTube Music",
             "com.google.android.youtube" to "YouTube",

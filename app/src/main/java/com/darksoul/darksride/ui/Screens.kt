@@ -385,6 +385,19 @@ internal fun MapsBesideCard() {
         Body("Turn the phone sideways and run Google Maps and Dark's Ride next to each other: " +
             "Dark's Ride switches to a compact layout that fits its half with no scrolling.", dim = true)
         BigButton("Open Maps beside", onClick = { com.darksoul.darksride.nav.RideNav.openMaps(context, beside = true) })
+        var full by remember { mutableStateOf(AppPrefs.flag(context, AppPrefs.MUSIC_FULL)) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Full-screen music", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text("While music plays beside Maps or on the small screen, the music card fills " +
+                    "the screen. Calls and messages pop up over it.", fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
+            }
+            Switch(checked = full, onCheckedChange = {
+                full = it
+                AppPrefs.setFlag(context, AppPrefs.MUSIC_FULL, it)
+            })
+        }
         Body("If Maps opens full screen instead: open Recents, tap the Dark's Ride icon at the top " +
             "of its card → Split screen (or \"Open in split screen view\"), then pick Maps. " +
             "Drag the middle bar to give Maps more room.", dim = true)

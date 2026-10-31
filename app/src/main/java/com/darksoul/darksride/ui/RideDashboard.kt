@@ -1,6 +1,17 @@
 package com.darksoul.darksride.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -136,14 +147,59 @@ fun RideDashboard(
         RideNotifications.dismissPopup(fresh.id)
     }
     val slots = rideSlots()
+    val now by RideMedia.now.collectAsState()
+    val playing = now?.playing == true
+    // Full-screen music: on by itself when music plays beside Maps / on the small screen
+    // (Settings), or any time with ⤢. "Cards ▾" goes back until the next time music starts.
+    var focus by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(playing) { if (playing) focus = null }
+    val autoFull = remember { AppPrefs.flag(context, AppPrefs.MUSIC_FULL) }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().rideBackground().windowInsetsPadding(insets)) {
         val layout = rideLayoutFor(maxWidth, maxHeight)
         val h = maxHeight
-        when (layout) {
-            RideLayout.PORTRAIT -> ListRide(title, onSettings, onClose, slots, compact = false, h, portraitExtras)
-            RideLayout.COMPACT -> ListRide(title, onSettings, onClose, slots, compact = true, h, portraitExtras)
-            RideLayout.WIDE -> WideRide(title, onSettings, onClose, slots, portraitExtras)
+        val full = focus ?: (autoFull && playing && layout == RideLayout.COMPACT)
+        if (full) {
+            MusicFullScreen(onCollapse = { focus = false })
+            FullScreenPopups(h)
+            return@BoxWithConstraints
+        }
+        CompositionLocalProvider(LocalExpandMusic provides { focus = true }) {
+            when (layout) {
+                RideLayout.PORTRAIT -> ListRide(title, onSettings, onClose, slots, compact = false, h, portraitExtras)
+                RideLayout.COMPACT -> ListRide(title, onSettings, onClose, slots, compact = true, h, portraitExtras)
+                RideLayout.WIDE -> WideRide(title, onSettings, onClose, slots, portraitExtras)
+            }
+        }
+    }
+}
+
+/** ⤢ on the music card: switch to full-screen music. */
+private val LocalExpandMusic = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+/**
+ * Over full-screen music: a call (until it ends) or a new message (for its spotlight time)
+ * slides in at the top. The music stays underneath.
+ */
+@Composable
+private fun BoxScope.FullScreenPopups(height: Dp) {
+    val call by RideCall.call.collectAsState()
+    val popup by RideNotifications.popup.collectAsState()
+    val c = call
+    val fresh = popup
+    val showing = c != null || fresh != null
+    if (showing) {
+        Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.45f)))
+    }
+    AnimatedVisibility(
+        visible = showing,
+        enter = slideInVertically { -it } + fadeIn(),
+        exit = slideOutVertically { -it } + fadeOut(),
+        modifier = Modifier.align(Alignment.TopCenter).padding(10.dp)
+    ) {
+        when {
+            c != null -> CallPanel(c, Modifier.fillMaxWidth().height((height * 0.62f).coerceIn(200.dp, 300.dp)))
+            fresh != null -> MessagePanel(fresh, spotlight = true, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -220,7 +276,7 @@ private fun PortraitSlot(slot: Slot) {
     when (slot) {
         Slot.Call -> call?.let { CallCard(it) }
         is Slot.Card -> when (slot.card) {
-            RideCard.MUSIC -> NowPlayingCard()
+            RideCard.MUSIC -> NowPlayingCard(onExpand = LocalExpandMusic.current)
             RideCard.NAVIGATION -> DestinationCard()
             RideCard.MESSAGES -> MessagesCard(spotlight = popup != null)
             RideCard.INTERNET -> InternetCard(AppMode.RIDE)
@@ -239,7 +295,7 @@ private fun CompactSlot(slot: Slot, height: Dp) {
     when (slot) {
         Slot.Call -> call?.let { CallPanel(it, Modifier.fillMaxWidth().height(panelHeight)) }
         is Slot.Card -> when (slot.card) {
-            RideCard.MUSIC -> MusicPanel(Modifier.fillMaxWidth().height(panelHeight))
+            RideCard.MUSIC -> MusicPanel(Modifier.fillMaxWidth().height(panelHeight), onExpand = LocalExpandMusic.current)
             RideCard.NAVIGATION -> RoutePanel(Modifier.fillMaxWidth())
             RideCard.MESSAGES -> {
                 val fresh = popup
@@ -265,7 +321,7 @@ private fun LeadSlot(slot: Slot, modifier: Modifier) {
     when (slot) {
         Slot.Call -> call?.let { CallPanel(it, modifier) }
         is Slot.Card -> when (slot.card) {
-            RideCard.MUSIC -> MusicPanel(modifier)
+            RideCard.MUSIC -> MusicPanel(modifier, onExpand = LocalExpandMusic.current)
             RideCard.NAVIGATION -> RoutePanel(modifier)
             RideCard.MESSAGES -> {
                 val n = popup ?: items.firstOrNull()
@@ -300,9 +356,7 @@ private fun RideTopBar(title: String, onSettings: (() -> Unit)?, onClose: (() ->
                 Box(Modifier.weight(1f))
             }
             Row(
-                modifier = Modifier.clip(RoundedCornerShape(50))
-                    .background(LocalGlass.current.card)
-                    .border(1.dp, colors.onSurface.copy(alpha = 0.15f), RoundedCornerShape(50))
+                modifier = Modifier.rideButtonSurface(circle = false)
                     .padding(horizontal = 12.dp, vertical = 7.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -338,13 +392,9 @@ private fun MessagePanel(n: RideNotif, spotlight: Boolean, modifier: Modifier, m
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     val glass = LocalGlass.current
-    val shape = RoundedCornerShape(24.dp)
     Column(
         modifier = modifier
-            .clip(shape)
-            .background(if (spotlight) colors.primary.copy(alpha = 0.14f) else glass.card)
-            .border(if (spotlight) 2.dp else 1.dp,
-                if (spotlight) colors.primary else glass.cardBorderTop, shape)
+            .rideSurface(24.dp, tint = if (spotlight) colors.primary else null, edge = if (spotlight) colors.primary else null)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -364,8 +414,7 @@ private fun MessagePanel(n: RideNotif, spotlight: Boolean, modifier: Modifier, m
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Box(
-            modifier = Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(50))
-                .background(colors.onSurface.copy(alpha = 0.10f))
+            modifier = Modifier.fillMaxWidth().height(48.dp).rideButtonSurface(circle = false)
                 .rideTap(onTap = { RideNotifications.dismissEverywhere(context, n.id) }),
             contentAlignment = Alignment.Center
         ) {
@@ -386,9 +435,7 @@ private fun RoutePanel(modifier: Modifier, slim: Boolean = false) {
     val green = routeGreen()
     Column(
         modifier = modifier
-            .clip(shape)
-            .background(Brush.verticalGradient(listOf(green.copy(alpha = 0.16f), glass.card)))
-            .border(1.dp, glass.cardBorderTop, shape)
+            .rideSurface(24.dp, tint = green)
             .padding(if (slim) 12.dp else 14.dp),
         verticalArrangement = if (slim) Arrangement.Top else Arrangement.SpaceBetween
     ) {
@@ -436,7 +483,7 @@ private fun QuietTile(text: String, modifier: Modifier) {
     val glass = LocalGlass.current
     val shape = RoundedCornerShape(24.dp)
     Box(
-        modifier = modifier.clip(shape).background(glass.card).border(1.dp, glass.cardBorderTop, shape).padding(16.dp),
+        modifier = modifier.rideSurface(24.dp).padding(16.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         Text(text, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
@@ -448,8 +495,7 @@ private fun PillButton(label: String, color: Color, modifier: Modifier = Modifie
     Box(
         modifier = modifier
             .height(56.dp)
-            .clip(RoundedCornerShape(50))
-            .background(Brush.verticalGradient(listOf(color, color.copy(red = color.red * 0.8f, green = color.green * 0.8f, blue = color.blue * 0.8f))))
+            .rideButtonSurface(circle = false, fill = Brush.verticalGradient(listOf(color, color.copy(red = color.red * 0.8f, green = color.green * 0.8f, blue = color.blue * 0.8f))))
             .rideTap(onTap = onClick)
             .padding(horizontal = 22.dp),
         contentAlignment = Alignment.Center

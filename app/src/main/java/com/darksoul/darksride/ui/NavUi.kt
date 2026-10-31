@@ -56,6 +56,8 @@ fun DestinationCard() {
     CollapsibleCard(
         title = "Navigation",
         stateKey = "destination",
+        // A route shared in the last 15 minutes that you may not have started yet.
+        attention = current != null && System.currentTimeMillis() - current.sentAt < 15 * 60_000L,
         summary = current?.let { "To ${it.name}" + (it.via?.let { v -> " via $v" } ?: "") }
             ?: "Recent: ${recent.first().name}",
         trailing = { open ->

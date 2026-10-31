@@ -56,9 +56,20 @@ object RideOverlay {
 
     // Colours follow the app: light / dark (light sensor in Auto) and the chosen ride theme.
     private val dark: Boolean get() = ThemeController.isDark.value
-    private val SURFACE_TOP: Int get() = if (dark) 0xF21A1A1C.toInt() else 0xFAFFFFFF.toInt()
-    private val SURFACE_BOTTOM: Int get() = if (dark) 0xF7070708.toInt() else 0xF5F3F1EF.toInt()
-    private val EDGE: Int get() = if (dark) 0x33FFFFFF else 0x1A000000
+    // Soft (neumorphism): the page colour, edge-less, raised by its shadow.
+    private val soft: Boolean get() = ThemeController.style.value == com.darksoul.darksride.ui.theme.UiStyle.SOFT
+    private val SURFACE_TOP: Int get() = when {
+        soft -> if (dark) 0xFF2A2D34.toInt() else 0xFFEEF1F5.toInt()
+        else -> if (dark) 0xF21A1A1C.toInt() else 0xFAFFFFFF.toInt()
+    }
+    private val SURFACE_BOTTOM: Int get() = when {
+        soft -> if (dark) 0xFF23262C.toInt() else 0xFFE3E7ED.toInt()
+        else -> if (dark) 0xF7070708.toInt() else 0xF5F3F1EF.toInt()
+    }
+    private val EDGE: Int get() = when {
+        soft -> if (dark) 0x14FFFFFF else 0x99FFFFFF.toInt()
+        else -> if (dark) 0x33FFFFFF else 0x1A000000
+    }
     private val TEXT: Int get() = if (dark) 0xFFFFFFFF.toInt() else 0xFF15161A.toInt()
     private val SUBTLE: Int get() = if (dark) 0xB3FFFFFF.toInt() else 0x9915161A.toInt()
     private val ACCENT: Int get() = ThemeController.palette.value.argb(dark)

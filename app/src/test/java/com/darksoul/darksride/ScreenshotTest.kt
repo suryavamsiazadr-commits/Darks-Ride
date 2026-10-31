@@ -26,6 +26,7 @@ import com.darksoul.darksride.ui.theme.DarksRideTheme
 import com.darksoul.darksride.ui.theme.RidePalette
 import com.darksoul.darksride.ui.theme.ThemeChoice
 import com.darksoul.darksride.ui.theme.ThemeController
+import com.darksoul.darksride.ui.theme.UiStyle
 import org.json.JSONObject
 import org.junit.Rule
 import org.junit.Test
@@ -101,6 +102,39 @@ class ScreenshotTest {
     @Test @Config(qualifiers = "w411dp-h891dp-port-xhdpi")
     fun rideNoMusicYet() = shoot("ride_waiting_music") { RideScreen() }
 
+    // ---------- Soft (neumorphism) and full-screen music ----------
+
+    @Test @Config(qualifiers = "w411dp-h891dp-port-xhdpi")
+    fun softPortraitDark() = shoot("soft_portrait_dark", style = UiStyle.SOFT) { music(); route(); message(); RideScreen() }
+
+    @Test @Config(qualifiers = "w411dp-h891dp-port-xhdpi")
+    fun softPortraitLight() = shoot("soft_portrait_light", dark = false, style = UiStyle.SOFT) { music(); route(); RideScreen() }
+
+    @Test @Config(qualifiers = "w937dp-h411dp-land-xhdpi")
+    fun softWideLight() = shoot("soft_wide_light", dark = false, style = UiStyle.SOFT, palette = RidePalette.GLACIER) {
+        music(); route(); RideScreen()
+    }
+
+    @Test @Config(qualifiers = "w937dp-h411dp-land-xhdpi")
+    fun softWideDark() = shoot("soft_wide_dark", style = UiStyle.SOFT) { music(); route(); RideScreen() }
+
+    @Test @Config(qualifiers = "w465dp-h411dp-land-xhdpi")
+    fun fullMusicHalf() = shoot("full_music_half") { music(); route(); RideScreen() }
+
+    @Test @Config(qualifiers = "w300dp-h411dp-port-xhdpi")
+    fun fullMusicThirdMessage() = shoot("full_music_third_message") { music(); message(); RideScreen() }
+
+    @Test @Config(qualifiers = "w472dp-h411dp-land-xhdpi")
+    fun fullMusicSmallCallSoft() = shoot("full_music_small_call_soft", style = UiStyle.SOFT) { music(); call(); RideScreen(panel = true) }
+
+    @Test @Config(qualifiers = "w300dp-h411dp-port-xhdpi")
+    fun fullMusicThirdLight() = shoot("full_music_third_light", dark = false, palette = RidePalette.REDLINE) { music(); RideScreen() }
+
+    @Test @Config(qualifiers = "w412dp-h2200dp-port-xhdpi")
+    fun softSettingsDark() = shoot("soft_settings_dark", style = UiStyle.SOFT) {
+        SettingsScreen(mode = AppMode.MAIN, onChangeRole = {})
+    }
+
     // ---------- Main phone ----------
 
     @Test @Config(qualifiers = "w412dp-h891dp-port-xhdpi")
@@ -135,9 +169,12 @@ class ScreenshotTest {
         name: String,
         dark: Boolean = true,
         palette: RidePalette = RidePalette.EMBER,
+        style: UiStyle = UiStyle.GLASS,
         content: @Composable () -> Unit
     ) {
         reset()
+        com.darksoul.darksride.ui.CardMemory.reset()
+        ThemeController.setStyle(ctx, style)
         AppPrefs.setMode(ctx, AppMode.RIDE)
         ThemeController.init(ctx)
         ThemeController.setChoice(ctx, if (dark) ThemeChoice.DARK else ThemeChoice.LIGHT)
@@ -164,6 +201,7 @@ class ScreenshotTest {
         RideMedia.update(
             JSONObject().put("t", "media").put("app", "YouTube Music").put("title", "Kesariya (From \"Brahmastra\")")
                 .put("artist", "Pritam, Arijit Singh").put("playing", true).put("vol", 9).put("volMax", 15)
+                .put("pos", 83_000L).put("dur", 268_000L)
                 .put("artNew", true).put("art", fakeArt())
         )
     }

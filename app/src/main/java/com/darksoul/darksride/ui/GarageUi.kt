@@ -151,7 +151,8 @@ private fun DueSoonCard(g: Garage) {
         title = "Due soon",
         stateKey = "due_soon",
         titleColor = if (items.any { it.overdue }) Stop else MaterialTheme.colorScheme.primary,
-        summary = items.joinToString(" · ") { it.title }
+        summary = items.joinToString(" · ") { it.title },
+        attention = true
     ) {
         items.forEach { item ->
             Row(verticalAlignment = Alignment.CenterVertically) {

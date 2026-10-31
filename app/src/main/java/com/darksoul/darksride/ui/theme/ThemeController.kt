@@ -9,6 +9,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/** The two looks: see-through glass, or soft raised neumorphism. */
+enum class UiStyle(val label: String, val tagline: String) {
+    GLASS("Glass", "See-through cards, stars at night"),
+    SOFT("Soft", "Neumorphism: raised, pillowy cards")
+}
+
 /** How the rider wants the theme chosen. */
 enum class ThemeChoice(val label: String) {
     AUTO("Auto (light sensor)"),
@@ -36,6 +42,16 @@ object ThemeController {
 
     private val _choice = MutableStateFlow(ThemeChoice.AUTO)
     val choice: StateFlow<ThemeChoice> = _choice.asStateFlow()
+
+    private const val KEY_STYLE = "theme_style"
+    private val _style = MutableStateFlow(UiStyle.GLASS)
+    /** Glass or Soft (neumorphism). */
+    val style: StateFlow<UiStyle> = _style.asStateFlow()
+
+    fun setStyle(c: Context, s: UiStyle) {
+        c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putString(KEY_STYLE, s.name) }
+        _style.value = s
+    }
 
     private const val KEY_PALETTE = "theme_palette"
     private val _palette = MutableStateFlow(RidePalette.EMBER)
@@ -70,6 +86,7 @@ object ThemeController {
         val prefs = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _palette.value = RidePalette.entries.firstOrNull { it.name == prefs.getString(KEY_PALETTE, null) }
             ?: RidePalette.EMBER
+        _style.value = UiStyle.entries.firstOrNull { it.name == prefs.getString(KEY_STYLE, null) } ?: UiStyle.GLASS
         val saved = prefs.getString(KEY, null)
         _choice.value = ThemeChoice.entries.firstOrNull { it.name == saved } ?: ThemeChoice.AUTO
         val systemDark = (c.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==

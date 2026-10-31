@@ -102,8 +102,7 @@ fun SetupCard(mode: AppMode, hideWhenComplete: Boolean = false) {
     CollapsibleCard(
         title = if (missing == 0) "Setup complete" else "Setup: $missing step(s) left",
         stateKey = "setup",
-        defaultOpen = missing > 0,
-        persist = false,
+        attention = missing > 0,
         titleColor = if (missing == 0) Go else MaterialTheme.colorScheme.primary,
         summary = if (missing == 0) "Everything is allowed" else "Tap a step to allow it"
     ) {

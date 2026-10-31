@@ -66,13 +66,16 @@ object AppPrefs {
     const val NOTIFY_SHOW_TEXT = "notify_show_text"
     /** Ride screen: open the ride panel on a second screen by itself. */
     const val PANEL_AUTO = "panel_auto"
+    /** Ride screen: music fills the screen while it plays (beside Maps / small screen). */
+    const val MUSIC_FULL = "music_full"
 
     private val FLAG_DEFAULTS = mapOf(
         NOTIFY_WHATSAPP to true,
         NOTIFY_SMS to true,
         NOTIFY_OTHER to false,
         NOTIFY_SHOW_TEXT to true,
-        PANEL_AUTO to true
+        PANEL_AUTO to true,
+        MUSIC_FULL to true
     )
 
     fun flag(c: Context, key: String): Boolean =

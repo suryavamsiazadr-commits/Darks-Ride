@@ -60,7 +60,7 @@ fun InternetCard(mode: AppMode) {
     CollapsibleCard(
         title = "Bike internet",
         stateKey = "internet",
-        defaultOpen = mode == AppMode.RIDE && !online,
+        attention = (mode == AppMode.RIDE || link == LinkStatus.CONNECTED) && !online || !helper,
         titleColor = if (online) Go else null,
         summary = headline + if (!helper) " · auto-tap off" else ""
     ) {

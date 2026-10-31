@@ -101,10 +101,7 @@ internal fun CallCard(call: CallInfo) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(16.dp, shape, ambientColor = tint.copy(alpha = 0.5f), spotColor = tint.copy(alpha = 0.5f))
-            .clip(shape)
-            .background(Brush.verticalGradient(listOf(tint.copy(alpha = 0.22f), glass.backgroundTop.copy(alpha = 0.9f))))
-            .border(1.dp, tint.copy(alpha = 0.6f), shape)
+            .rideSurface(28.dp, tint = tint, edge = tint.copy(alpha = 0.7f))
             .padding(22.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -180,9 +177,7 @@ fun CallPanel(call: CallInfo, modifier: Modifier = Modifier) {
     val tint = if (call.ringing) Go else colors.primary
     Column(
         modifier = modifier
-            .clip(shape)
-            .background(Brush.verticalGradient(listOf(tint.copy(alpha = 0.24f), glass.backgroundTop.copy(alpha = 0.9f))))
-            .border(1.dp, tint.copy(alpha = 0.6f), shape)
+            .rideSurface(26.dp, tint = tint, edge = tint.copy(alpha = 0.7f))
             .padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {

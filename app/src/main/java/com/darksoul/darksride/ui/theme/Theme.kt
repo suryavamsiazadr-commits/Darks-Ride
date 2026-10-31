@@ -38,7 +38,43 @@ data class GlassColors(
     /** The faint specks behind the page: stars at night, dust in daylight. */
     val speck: Color = Color.White,
     /** Second colour of the theme, for gradients (music card). */
-    val accent2: Color = Color.White
+    val accent2: Color = Color.White,
+    /** Neumorphism ("Soft"): cards are the page colour, raised by a light and a dark shadow. */
+    val soft: Boolean = false,
+    val softLight: Color = Color.Transparent,
+    val softDark: Color = Color.Transparent
+)
+
+/** Neumorphism: one calm base colour; light from the top left, shade to the bottom right. */
+private fun softDark(p: RidePalette) = GlassColors(
+    isDark = true,
+    backgroundTop = Color(0xFF23262C),
+    backgroundBottom = Color(0xFF23262C),
+    card = Color(0xFF23262C),
+    cardHighlight = Color.Transparent,
+    cardBorderTop = Color.Transparent,
+    cardBorderBottom = Color.Transparent,
+    glow = p.dark.copy(alpha = 0.45f),
+    accent2 = p.second,
+    soft = true,
+    softLight = Color(0x1FFFFFFF),
+    softDark = Color(0xB3000000)
+)
+
+private fun softLight(p: RidePalette) = GlassColors(
+    isDark = false,
+    backgroundTop = Color(0xFFE3E7ED),
+    backgroundBottom = Color(0xFFE3E7ED),
+    card = Color(0xFFE3E7ED),
+    cardHighlight = Color.Transparent,
+    cardBorderTop = Color.Transparent,
+    cardBorderBottom = Color.Transparent,
+    glow = p.light.copy(alpha = 0.35f),
+    accent2 = p.light,
+    speck = Color.Transparent,
+    soft = true,
+    softLight = Color(0xFFFFFFFF),
+    softDark = Color(0x8C9AA8BE)
 )
 
 // True black (no blue or grey tint): kind to OLED screens and to the eyes at night.
@@ -111,9 +147,21 @@ fun DarksRideTheme(content: @Composable () -> Unit) {
     LightSensor()
     val dark by ThemeController.isDark.collectAsState()
     val palette by ThemeController.palette.collectAsState()
-    CompositionLocalProvider(LocalGlass provides if (dark) darkGlass(palette) else lightGlass(palette)) {
+    val style by ThemeController.style.collectAsState()
+    val soft = style == UiStyle.SOFT
+    val glass = when {
+        soft && dark -> softDark(palette)
+        soft -> softLight(palette)
+        dark -> darkGlass(palette)
+        else -> lightGlass(palette)
+    }
+    val scheme = (if (dark) darkScheme(palette) else lightScheme(palette)).let {
+        if (soft) it.copy(background = glass.card, surface = glass.card, surfaceContainer = glass.card,
+            surfaceContainerHigh = glass.card, surfaceContainerHighest = glass.card) else it
+    }
+    CompositionLocalProvider(LocalGlass provides glass) {
         MaterialTheme(
-            colorScheme = if (dark) darkScheme(palette) else lightScheme(palette),
+            colorScheme = scheme,
             typography = Typography,
             content = content
         )

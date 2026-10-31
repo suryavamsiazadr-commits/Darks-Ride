@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.darksoul.darksride.ui.theme.RidePalette
+import com.darksoul.darksride.ui.theme.UiStyle
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.MaterialTheme
@@ -40,15 +42,25 @@ fun AppearanceCard() {
     val dark by ThemeController.isDark.collectAsState()
     val lux by ThemeController.lux.collectAsState()
     val palette by ThemeController.palette.collectAsState()
+    val style by ThemeController.style.collectAsState()
     val now = if (dark) "dark" else "light"
 
     CollapsibleCard(
         title = "Appearance",
         stateKey = "appearance",
         defaultOpen = false,
-        summary = "${palette.label} · ${choice.label} · now $now"
+        summary = "${style.label} · ${palette.label} · ${choice.label} · now $now"
     ) {
-        Text("Ride theme", fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
+        Text("Style", fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            UiStyle.entries.forEach { st ->
+                StyleTile(st, selected = st == style, modifier = Modifier.weight(1f)) {
+                    ThemeController.setStyle(context, st)
+                }
+            }
+        }
+        Text("Ride colours", fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface)
         RidePalette.entries.chunked(2).forEach { pair ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -113,5 +125,45 @@ private fun PaletteTile(p: RidePalette, selected: Boolean, dark: Boolean, modifi
         }
         Text(p.label, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
         Text(p.tagline, fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.65f), maxLines = 2)
+    }
+}
+
+/** Glass or Soft, each drawn in its own look so you can see the difference. */
+@Composable
+private fun StyleTile(st: UiStyle, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val glass = com.darksoul.darksride.ui.theme.LocalGlass.current
+    val shape = RoundedCornerShape(18.dp)
+    Column(
+        modifier = modifier
+            .clip(shape)
+            .background(colors.primary.copy(alpha = if (selected) 0.14f else 0.04f))
+            .border(if (selected) 2.dp else 1.dp, if (selected) colors.primary else colors.onSurface.copy(alpha = 0.12f), shape)
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Mini preview: a card in that style.
+        val base = if (glass.isDark) Color(0xFF23262C) else Color(0xFFE3E7ED)
+        Box(
+            modifier = Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(12.dp))
+                .background(if (st == UiStyle.SOFT) base else Color.Transparent),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier.fillMaxWidth(0.7f).height(26.dp)
+                    .then(
+                        if (st == UiStyle.SOFT) Modifier.neu(10.dp, 4.dp, base,
+                            if (glass.isDark) Color(0x1FFFFFFF) else Color.White,
+                            if (glass.isDark) Color(0xB3000000) else Color(0x8C9AA8BE))
+                            .clip(RoundedCornerShape(10.dp)).background(base)
+                        else Modifier.clip(RoundedCornerShape(10.dp))
+                            .background(Brush.verticalGradient(listOf(colors.onSurface.copy(alpha = 0.16f), colors.onSurface.copy(alpha = 0.04f))))
+                            .border(1.dp, colors.onSurface.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                    )
+            )
+        }
+        Text(st.label + if (selected) "  ✓" else "", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+        Text(st.tagline, fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.65f), maxLines = 2)
     }
 }

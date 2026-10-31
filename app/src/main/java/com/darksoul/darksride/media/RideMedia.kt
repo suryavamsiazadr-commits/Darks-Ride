@@ -18,8 +18,21 @@ data class NowPlaying(
     val playing: Boolean,
     val art: ImageBitmap?,
     val volume: Int,
-    val volumeMax: Int
-)
+    val volumeMax: Int,
+    /** Song length and where it was when the main phone reported it (0 if the app doesn't say). */
+    val durationMs: Long = 0L,
+    val positionMs: Long = 0L,
+    /** When that report arrived here (elapsedRealtime), to keep the clock running locally. */
+    val reportedAt: Long = 0L,
+    val speed: Float = 1f
+) {
+    /** Where the song is right now. */
+    fun positionNow(): Long {
+        if (durationMs <= 0L) return 0L
+        val moved = if (playing) ((android.os.SystemClock.elapsedRealtime() - reportedAt) * speed).toLong() else 0L
+        return (positionMs + moved).coerceIn(0L, durationMs)
+    }
+}
 
 /** Ride screen side of music control: holds the latest state sent by the main phone. */
 object RideMedia {
@@ -41,7 +54,11 @@ object RideMedia {
             playing = msg.optBoolean("playing"),
             art = art,
             volume = msg.optInt("vol"),
-            volumeMax = msg.optInt("volMax", 15).coerceAtLeast(1)
+            volumeMax = msg.optInt("volMax", 15).coerceAtLeast(1),
+            durationMs = msg.optLong("dur"),
+            positionMs = msg.optLong("pos"),
+            reportedAt = android.os.SystemClock.elapsedRealtime(),
+            speed = msg.optDouble("speed", 1.0).toFloat().takeIf { it > 0f } ?: 1f
         )
     }
 
