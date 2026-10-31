@@ -50,6 +50,10 @@ android {
     buildFeatures {
         compose = true
     }
+    // Screenshot tests (Robolectric) need the app's resources.
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -66,6 +70,10 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.mlkit.document.scanner)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

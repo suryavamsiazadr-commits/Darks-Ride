@@ -10,6 +10,7 @@ import android.content.Intent
 import android.net.Uri
 import android.view.Display
 import androidx.core.app.NotificationCompat
+import com.darksoul.darksride.AppVisibility
 import com.darksoul.darksride.R
 import com.darksoul.darksride.link.LinkState
 import com.darksoul.darksride.overlay.RideOverlay
@@ -69,9 +70,23 @@ object RideNav {
         runCatching { c.startActivity(intent, options) }
     }
 
+    /**
+     * Opens Google Maps. With [beside] (or when Dark's Ride is already in split screen) Maps
+     * opens next to Dark's Ride instead of covering it.
+     */
+    fun openMaps(c: Context, beside: Boolean = false) {
+        val launch = c.packageManager.getLaunchIntentForPackage(MAPS)
+            ?: Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0"))
+        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (beside || AppVisibility.inSplit.value) launch.addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
+        runCatching { c.startActivity(launch) }
+    }
+
     /** Opens Google Maps turn-by-turn on the main screen. Returns false if it couldn't. */
     fun navigate(c: Context, d: RideDestination): Boolean {
         val intent = Intent(Intent.ACTION_VIEW, uriFor(d)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        // In split screen, Maps opens in the other half instead of covering Dark's Ride.
+        if (AppVisibility.inSplit.value) intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
         val options = ActivityOptions.makeBasic().setLaunchDisplayId(Display.DEFAULT_DISPLAY).toBundle()
         return try {
             c.startActivity(Intent(intent).setPackage(MAPS), options)

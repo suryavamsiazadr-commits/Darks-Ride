@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,21 +62,38 @@ import com.darksoul.darksride.ui.theme.LocalGlass
 @Composable
 fun RideColumn(
     insets: WindowInsets = WindowInsets.safeDrawing,
+    scroll: ScrollState? = null,
+    background: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val glass = LocalGlass.current
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(glass.backgroundTop, glass.backgroundBottom)))
-            .ambientGlow(glass.ambient)
-            .starfield(glass.isDark, glass.speck)
-            .windowInsetsPadding(insets)
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-        content = content
-    )
+            .then(if (background) Modifier.rideBackground() else Modifier)
+            .windowInsetsPadding(insets),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(
+            modifier = Modifier
+                // Wide screens (landscape): keep pages a comfortable reading width, centred.
+                .widthIn(max = 720.dp)
+                .fillMaxSize()
+                .verticalScroll(scroll ?: rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            content = content
+        )
+    }
+}
+
+/** The page background: gradient, soft glow and stars (dark) or dust (light). */
+@Composable
+internal fun Modifier.rideBackground(): Modifier {
+    val glass = LocalGlass.current
+    return this
+        .background(Brush.verticalGradient(listOf(glass.backgroundTop, glass.backgroundBottom)))
+        .ambientGlow(glass.ambient)
+        .starfield(glass.isDark, glass.speck)
 }
 
 /** A faint field of tiny stars behind the dark theme: there if you look, never in the way. */

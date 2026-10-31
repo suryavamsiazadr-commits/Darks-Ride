@@ -24,7 +24,8 @@ import com.darksoul.darksride.AppMode
 import com.darksoul.darksride.link.LinkState
 import com.darksoul.darksride.link.LinkStatus
 import com.darksoul.darksride.ui.RideColumn
-import com.darksoul.darksride.ui.RideContent
+import com.darksoul.darksride.ui.RideDashboard
+import com.darksoul.darksride.ui.Body
 import com.darksoul.darksride.ui.Header
 import com.darksoul.darksride.ui.theme.DarksRideTheme
 
@@ -103,6 +104,10 @@ private fun PanelScreen(onClose: () -> Unit) {
     val status by LinkState.status.collectAsState()
     val peer by LinkState.peerName.collectAsState()
 
+    if (status == LinkStatus.CONNECTED) {
+        RideDashboard(title = "Dark's Ride", onClose = onClose)
+        return
+    }
     RideColumn {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.weight(1f)) {
@@ -110,6 +115,6 @@ private fun PanelScreen(onClose: () -> Unit) {
             }
             TextButton(onClick = onClose) { Text("Close") }
         }
-        if (status == LinkStatus.CONNECTED) RideContent()
+        Body("Waiting for your ${com.darksoul.darksride.ui.RoleNames.MAIN}…", dim = true)
     }
 }

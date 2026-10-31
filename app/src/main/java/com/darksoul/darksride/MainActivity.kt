@@ -23,8 +23,14 @@ import com.darksoul.darksride.ui.theme.DarksRideTheme
 
 /** FragmentActivity (a ComponentActivity) because the fingerprint prompt needs it. */
 class MainActivity : FragmentActivity() {
+    override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean, newConfig: android.content.res.Configuration) {
+        super.onMultiWindowModeChanged(isInMultiWindowMode, newConfig)
+        AppVisibility.setSplit(isInMultiWindowMode)
+    }
+
     override fun onResume() {
         super.onResume()
+        AppVisibility.setSplit(isInMultiWindowMode)
         if (AppPrefs.mode(this) == AppMode.RIDE) RideMainHandle.attach(this)
     }
 

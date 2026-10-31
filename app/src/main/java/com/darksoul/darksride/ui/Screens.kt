@@ -112,6 +112,23 @@ fun LinkScreen(
         }
     }
 
+    // Linked on the bike: the ride dashboard (fits the screen, landscape and split screen too).
+    if (mode == AppMode.RIDE && ready && status == LinkStatus.CONNECTED) {
+        RideDashboard(
+            title = RoleNames.RIDE,
+            onSettings = onOpenSettings,
+            insets = insets,
+            portraitExtras = {
+                InternetCard(mode)
+                RideModeCard(mode = mode, on = rideOn)
+                MapsBesideCard()
+                SetupCard(mode, hideWhenComplete = true)
+                VersionLabel(modifier = Modifier.padding(top = 8.dp))
+            }
+        )
+        return
+    }
+
     RideColumn(insets = insets) {
         Header(
             title = RoleNames.of(mode),
@@ -356,3 +373,22 @@ private fun linkPermissions(): Array<String> =
 private fun hasBluetoothAccess(c: Context): Boolean =
     ContextCompat.checkSelfPermission(c, Manifest.permission.BLUETOOTH_CONNECT) ==
         PackageManager.PERMISSION_GRANTED
+
+/** Bike phone: run Dark's Ride and Google Maps side by side (Android split screen). */
+@Composable
+private fun MapsBesideCard() {
+    val context = LocalContext.current
+    CollapsibleCard(
+        title = "Side by side with Maps",
+        stateKey = "maps_beside",
+        defaultOpen = false,
+        summary = "Android Auto style: Maps and Dark's Ride together"
+    ) {
+        Body("Turn the phone sideways and run Google Maps and Dark's Ride next to each other: " +
+            "Dark's Ride switches to a compact layout that fits its half with no scrolling.", dim = true)
+        BigButton("Open Maps beside", onClick = { com.darksoul.darksride.nav.RideNav.openMaps(context, beside = true) })
+        Body("If Maps opens full screen instead: open Recents, tap the Dark's Ride icon at the top " +
+            "of its card → Split screen (or \"Open in split screen view\"), then pick Maps. " +
+            "Drag the middle bar to give Maps more room.", dim = true)
+    }
+}

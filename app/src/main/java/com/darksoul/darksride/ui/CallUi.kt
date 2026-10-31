@@ -141,28 +141,69 @@ private fun CallCard(call: CallInfo) {
 
 /** First letter of the caller in a gradient circle; a soft ring pulses while it rings. */
 @Composable
-private fun Avatar(name: String, tint: Color, pulse: Boolean) {
+internal fun Avatar(name: String, tint: Color, pulse: Boolean, size: Dp = 80.dp) {
     val ring = rememberInfiniteTransition(label = "ring")
     val scale by ring.animateFloat(
         initialValue = 1f, targetValue = if (pulse) 1.35f else 1f,
         animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "scale"
     )
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(104.dp)) {
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(size * 1.3f)) {
         if (pulse) {
             Box(
-                Modifier.size(80.dp).scale(scale).clip(CircleShape)
+                Modifier.size(size).scale(scale).clip(CircleShape)
                     .background(tint.copy(alpha = (1.35f - scale).coerceIn(0f, 0.4f)))
             )
         }
         Box(
-            modifier = Modifier.size(80.dp).clip(CircleShape)
+            modifier = Modifier.size(size).clip(CircleShape)
                 .background(Brush.linearGradient(listOf(tint, tint.copy(alpha = 0.6f)))),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 name.trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•",
-                fontSize = 34.sp, fontWeight = FontWeight.Bold, color = Color.White
+                fontSize = (size.value * 0.42f).sp, fontWeight = FontWeight.Bold, color = Color.White
             )
+        }
+    }
+}
+
+/**
+ * The call for the landscape and small-screen layouts: fills its space, buttons as big as fit.
+ */
+@Composable
+fun CallPanel(call: CallInfo, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val colors = MaterialTheme.colorScheme
+    val glass = LocalGlass.current
+    val shape = RoundedCornerShape(26.dp)
+    val send = { action: String -> LinkService.sendCommand(context, action) }
+    val tint = if (call.ringing) Go else colors.primary
+    Column(
+        modifier = modifier
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(tint.copy(alpha = 0.24f), glass.backgroundTop.copy(alpha = 0.9f))))
+            .border(1.dp, tint.copy(alpha = 0.6f), shape)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Avatar(call.caller, tint, pulse = call.ringing, size = 56.dp)
+            Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
+                Text(((if (call.ringing) "INCOMING" else "ON CALL") + " · ${call.app}").uppercase(),
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp, color = tint)
+                Text(call.caller, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = colors.onSurface,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 28.sp)
+                if (!call.ringing) CallTimer(call.since)
+            }
+        }
+        if (call.ringing) {
+            Row(modifier = Modifier.fillMaxWidth().weight(1f, fill = false).padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                CallButton("✕  Decline", Stop, Modifier.weight(1f), height = 84.dp) { send("reject") }
+                CallButton("✓  Answer", Go, Modifier.weight(1f), height = 84.dp) { send("answer") }
+            }
+        } else {
+            CallButton("End call", Stop, Modifier.fillMaxWidth().padding(top = 12.dp), height = 76.dp) { send("end") }
         }
     }
 }

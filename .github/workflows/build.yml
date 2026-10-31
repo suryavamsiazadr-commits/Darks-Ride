@@ -54,3 +54,33 @@ jobs:
         with:
           files: DarksRide-*.apk
           generate_release_notes: true
+
+  # Renders the main screens (portrait, landscape, small screen, split screen; dark and light)
+  # to PNGs with Robolectric, to check the layout without a phone. Doesn't block the APK.
+  screens:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Render screens
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest --tests '*ScreenshotTest*' --stacktrace 2>&1 | tee screens.log
+      - name: Show test errors
+        if: failure()
+        run: |
+          grep -E "^e: |What went wrong|FAILED|Exception|Caused by" -A3 screens.log | head -80 | while IFS= read -r line; do
+            echo "::error::${line}"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens
+          path: |
+            app/build/screens/
+            app/build/reports/tests/

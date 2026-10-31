@@ -16,6 +16,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -221,7 +223,7 @@ private fun MiniPlayer(n: NowPlaying?, playing: Boolean, onToggle: () -> Unit) {
 
 /** Album art with a glow in the theme colour, or a note icon on a gradient. */
 @Composable
-private fun Art(n: NowPlaying?, size: Dp) {
+internal fun Art(n: NowPlaying?, size: Dp) {
     val colors = MaterialTheme.colorScheme
     val glass = LocalGlass.current
     val shape = RoundedCornerShape(size / 5)
@@ -246,7 +248,7 @@ private fun Art(n: NowPlaying?, size: Dp) {
 
 /** The big play / pause: a glowing gradient circle. */
 @Composable
-private fun PlayButton(playing: Boolean, size: Dp, onClick: () -> Unit) {
+internal fun PlayButton(playing: Boolean, size: Dp, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val glass = LocalGlass.current
     Box(
@@ -268,7 +270,7 @@ private fun PlayButton(playing: Boolean, size: Dp, onClick: () -> Unit) {
 
 /** Previous / next / volume: frosted circles. */
 @Composable
-private fun RoundButton(
+internal fun RoundButton(
     @DrawableRes icon: Int,
     label: String,
     size: Dp,
@@ -292,7 +294,7 @@ private fun RoundButton(
 
 /** Volume as lit segments, easy to read at a glance. */
 @Composable
-private fun VolumeBar(volume: Int, max: Int, modifier: Modifier) {
+internal fun VolumeBar(volume: Int, max: Int, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
     val glass = LocalGlass.current
     val segments = max.coerceIn(1, 15)
@@ -320,7 +322,7 @@ private fun VolumeBar(volume: Int, max: Int, modifier: Modifier) {
 
 /** Three little bars that dance while music plays. */
 @Composable
-private fun Equalizer(playing: Boolean) {
+internal fun Equalizer(playing: Boolean) {
     val colors = MaterialTheme.colorScheme
     val t = rememberInfiniteTransition(label = "eq")
     val bars = listOf(420, 300, 520).map { ms ->
@@ -335,6 +337,108 @@ private fun Equalizer(playing: Boolean) {
                     .clip(RoundedCornerShape(2.dp))
                     .background(colors.primary)
             )
+        }
+    }
+}
+
+/**
+ * Music for the landscape and small-screen layouts: fills the space it's given, no scrolling.
+ * Big art and a volume bar when there's room, just art, title and controls when there isn't.
+ */
+@Composable
+fun MusicPanel(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val now by RideMedia.now.collectAsState()
+    val send = { action: String -> LinkService.sendCommand(context, action) }
+    val n = now
+    val colors = MaterialTheme.colorScheme
+    val glass = LocalGlass.current
+    val shape = RoundedCornerShape(26.dp)
+    val playing = n?.playing == true
+
+    BoxWithConstraints(
+        modifier = modifier
+            .clip(shape)
+            .background(glass.card)
+            .border(1.dp, Brush.verticalGradient(listOf(colors.primary.copy(alpha = 0.55f), glass.cardBorderBottom)), shape)
+    ) {
+        val h = maxHeight
+        val roomy = h >= 300.dp
+        val tight = h < 210.dp
+        val artSize = when { roomy -> 104.dp; tight -> 52.dp; else -> 72.dp }
+        val playSize = when { roomy -> 88.dp; tight -> 56.dp; else -> 72.dp }
+        val sideSize = when { roomy -> 64.dp; tight -> 48.dp; else -> 56.dp }
+
+        n?.art?.let { art ->
+            Image(bitmap = art, contentDescription = null, contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize().blur(36.dp).alpha(if (glass.isDark) 0.5f else 0.3f))
+        }
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(
+            colors.primary.copy(alpha = 0.16f), glass.backgroundBottom.copy(alpha = if (n?.art != null) 0.7f else 0f)))))
+
+        Column(
+            modifier = Modifier.fillMaxSize().padding(if (tight) 12.dp else 16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Art(n, artSize)
+                Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("NOW PLAYING", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.4.sp, color = colors.primary, modifier = Modifier.weight(1f))
+                        Equalizer(playing)
+                    }
+                    Text(
+                        when {
+                            n == null -> "Waiting for music"
+                            n.nothingPlaying -> "Nothing playing"
+                            else -> n.title.ifEmpty { "Unknown track" }
+                        },
+                        fontSize = if (tight) 17.sp else 20.sp, fontWeight = FontWeight.Bold,
+                        color = colors.onSurface, maxLines = if (roomy) 2 else 1,
+                        overflow = TextOverflow.Ellipsis, lineHeight = if (tight) 20.sp else 24.sp
+                    )
+                    val sub = when {
+                        n == null -> "from your ${RoleNames.MAIN}"
+                        n.nothingPlaying -> "Press play to resume"
+                        else -> listOf(n.artist, n.app).filter { it.isNotEmpty() }.joinToString(" · ")
+                    }
+                    if (sub.isNotEmpty()) {
+                        Text(sub, fontSize = 14.sp, color = colors.onSurface.copy(alpha = 0.7f),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (!roomy && !tight) {
+                    RoundButton(R.drawable.ic_volume_down, "Volume down", sideSize, repeat = true) {
+                        RideMedia.nudgeVolume(-1); send("vol_down")
+                    }
+                }
+                RoundButton(R.drawable.ic_prev, "Previous", sideSize) { send("prev") }
+                PlayButton(playing, playSize) { send("toggle") }
+                RoundButton(R.drawable.ic_next, "Next", sideSize) { send("next") }
+                if (!roomy && !tight) {
+                    RoundButton(R.drawable.ic_volume_up, "Volume up", sideSize, repeat = true) {
+                        RideMedia.nudgeVolume(+1); send("vol_up")
+                    }
+                }
+            }
+            if (roomy) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RoundButton(R.drawable.ic_volume_down, "Volume down", 52.dp, repeat = true) {
+                        RideMedia.nudgeVolume(-1); send("vol_down")
+                    }
+                    VolumeBar(n?.volume ?: 0, n?.volumeMax ?: 15, Modifier.weight(1f).padding(horizontal = 10.dp))
+                    RoundButton(R.drawable.ic_volume_up, "Volume up", 52.dp, repeat = true) {
+                        RideMedia.nudgeVolume(+1); send("vol_up")
+                    }
+                }
+            }
         }
     }
 }

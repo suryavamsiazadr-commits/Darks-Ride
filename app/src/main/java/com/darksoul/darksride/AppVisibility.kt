@@ -15,6 +15,11 @@ import kotlinx.coroutines.flow.asStateFlow
 object AppVisibility {
     private val _open = MutableStateFlow(false)
     val open: StateFlow<Boolean> = _open.asStateFlow()
+    private val _inSplit = MutableStateFlow(false)
+    /** Dark's Ride is in Android split screen (e.g. next to Google Maps). */
+    val inSplit: StateFlow<Boolean> = _inSplit.asStateFlow()
+    fun setSplit(v: Boolean) { _inSplit.value = v }
+
     private var started = 0
     private var tracking = false
 
