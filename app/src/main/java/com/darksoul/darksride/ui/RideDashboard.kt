@@ -197,9 +197,13 @@ private fun BoxScope.FullScreenPopups(height: Dp) {
         exit = slideOutVertically { -it } + fadeOut(),
         modifier = Modifier.align(Alignment.TopCenter).padding(10.dp)
     ) {
-        when {
-            c != null -> CallPanel(c, Modifier.fillMaxWidth().height((height * 0.62f).coerceIn(200.dp, 300.dp)))
-            fresh != null -> MessagePanel(fresh, spotlight = true, modifier = Modifier.fillMaxWidth())
+        // A solid backing so the music underneath doesn't show through the pop-up.
+        val glass = LocalGlass.current
+        Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(glass.backgroundTop)) {
+            when {
+                c != null -> CallPanel(c, Modifier.fillMaxWidth().height((height * 0.62f).coerceIn(200.dp, 300.dp)))
+                fresh != null -> MessagePanel(fresh, spotlight = true, modifier = Modifier.fillMaxWidth())
+            }
         }
     }
 }

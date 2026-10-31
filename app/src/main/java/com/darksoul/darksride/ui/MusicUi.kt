@@ -198,8 +198,9 @@ fun MusicFullScreen(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
                     }
                 }
             } else {
-                // Tall: art on top, then title, progress and controls.
-                val art = minOf(boxW - pad * 2 - 40.dp, boxH * 0.36f)
+                // Tall: art on top, then title, progress and controls (smaller on short screens).
+                val short = boxH < 520.dp
+                val art = minOf(boxW - pad * 2 - 40.dp, boxH * if (short) 0.24f else 0.36f)
                 Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceEvenly) {
                     Art(n, art, breathe = true)
@@ -208,10 +209,10 @@ fun MusicFullScreen(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
                         TrackSubtitle(n, center = true)
                     }
                     WaveProgress(n, Modifier.fillMaxWidth())
-                    Transport(playing, side = 60.dp, play = 84.dp)
+                    Transport(playing, side = if (short) 52.dp else 60.dp, play = if (short) 68.dp else 84.dp)
                 }
             }
-            VolumeRow(n, button = 48.dp)
+            VolumeRow(n, button = if (boxH < 520.dp) 44.dp else 48.dp)
         }
     }
 }
@@ -266,7 +267,10 @@ private fun ExpandButton(onClick: () -> Unit) {
     Box(
         modifier = Modifier.padding(start = 10.dp).size(34.dp).rideButtonSurface(circle = true).clickable(onClick = onClick),
         contentAlignment = Alignment.Center
-    ) { Text("⤢", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.primary) }
+    ) {
+        Icon(painterResource(R.drawable.ic_open_full), contentDescription = "Full-screen music",
+            tint = colors.primary, modifier = Modifier.size(18.dp))
+    }
 }
 
 @Composable
