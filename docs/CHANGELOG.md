@@ -2,6 +2,12 @@
 
 How Dark's Ride grew, step by step. Dates are when the change landed on `main`.
 
+## v1.0.3 — 2026-11-01
+
+- **Fixed:** tapping play / pause repeatedly flipped between full-screen music and the cards. Full screen now opens once when music starts and stays until you tap **Cards ▾** (pause, play and track changes don't move it).
+- **Fixed:** the volume bar jumped back and forth while pressing or holding − / +. The bar keeps your level while the main phone catches up, then settles on the real value. Play / pause also responds instantly.
+- **Album art spread across the player**, sharp and fading away like a photo print: across the top of the open music card, over the whole full-screen player (left half in landscape), and dimmed behind the smaller cards. It drifts in a slow zoom while music plays.
+
 ## v1.0.2 — 2026-11-01
 
 - **Bike internet and the auto-tap helper now live in Settings** on both phones. They're optional checklist steps, so the Setup card no longer stays on the home page because of them.
