@@ -279,7 +279,7 @@ private fun BoxScope.ArtBackdrop(n: NowPlaying?, fade: Fade) {
         Fade.FULL -> Brush.verticalGradient(0f to base.copy(alpha = 0.25f), 0.3f to Color.Transparent,
             0.5f to base.copy(alpha = 0.55f), 0.66f to base.copy(alpha = 0.92f), 1f to base)
         Fade.HERO -> Brush.verticalGradient(0f to base.copy(alpha = 0.35f), 0.35f to Color.Transparent,
-            0.7f to base.copy(alpha = 0.6f), 1f to glass.card.copy(alpha = 1f).takeIf { glass.soft } ?: base.copy(alpha = 0.97f))
+            0.7f to base.copy(alpha = 0.6f), 1f to (if (glass.soft) glass.card else base.copy(alpha = 0.97f)))
         Fade.SIDE -> Brush.horizontalGradient(0f to Color.Transparent, 0.3f to base.copy(alpha = 0.25f),
             0.5f to base.copy(alpha = 0.85f), 0.62f to base.copy(alpha = 0.96f), 1f to base)
         Fade.CARD -> Brush.verticalGradient(0f to base.copy(alpha = 0.55f), 1f to base.copy(alpha = 0.9f))
