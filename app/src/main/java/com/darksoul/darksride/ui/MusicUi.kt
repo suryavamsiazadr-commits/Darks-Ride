@@ -244,16 +244,18 @@ fun MusicFullScreen(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
             } else {
                 // Tall: big sharp cover, then song, time, controls and volume.
                 val short = boxH < 560.dp
-                val artSize = minOf(boxW - pad * 2 - 24.dp, boxH * if (short) 0.30f else 0.40f)
+                val tiny = boxH < 480.dp // e.g. a third of the screen beside Maps
+                val artSize = minOf(boxW - pad * 2 - 24.dp, boxH * when { tiny -> 0.22f; short -> 0.30f; else -> 0.40f })
                 Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceEvenly) {
                     Art(n, artSize)
                     Column(Modifier.fillMaxWidth()) {
-                        TrackTitle(n, if (short) 22.sp else 26.sp, maxLines = 2, center = true)
+                        TrackTitle(n, if (short) 21.sp else 26.sp, maxLines = if (tiny) 1 else 2, center = true)
                         TrackSubtitle(n, center = true)
                     }
                     WaveProgress(n, Modifier.fillMaxWidth())
-                    Transport(playing, side = if (short) 54.dp else 62.dp, play = if (short) 72.dp else 88.dp)
+                    Transport(playing, side = when { tiny -> 50.dp; short -> 54.dp; else -> 62.dp },
+                        play = when { tiny -> 64.dp; short -> 72.dp; else -> 88.dp })
                 }
                 VolumeRow(n, button = if (short) 44.dp else 50.dp)
             }
