@@ -82,7 +82,14 @@ class MediaRelay(
         handler.post {
             val c = current()
             val controls = c?.transportControls
+            // Samsung (and others) can mute media while the level still shows e.g. 11: songs then
+            // "play" silently until a volume key is pressed. Starting music from the bike unmutes it.
+            if (action in setOf("toggle", "next", "prev") && audio.isStreamMute(AudioManager.STREAM_MUSIC)) {
+                audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0)
+                LinkState.log("Media sound was muted on this phone: unmuted")
+            }
             when (action) {
+                "unmute" -> audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0)
                 "toggle" -> when {
                     c?.playbackState?.state == PlaybackState.STATE_PLAYING -> controls?.pause()
                     controls != null -> controls.play()
@@ -100,7 +107,7 @@ class MediaRelay(
                 )
             }
             // Volume has no change callback: report it right away. Track changes report themselves.
-            if (action.startsWith("vol")) publish(force = false)
+            if (action.startsWith("vol") || action == "unmute") publish(force = false)
             else handler.postDelayed({ publish(force = false) }, 400)
         }
     }
@@ -159,13 +166,15 @@ class MediaRelay(
 
         val artKey = "$app|$title|$artist|${art != null}"
         // A seek or pause/play changes lastPositionUpdateTime, so the bike gets the new position.
-        val key = "$artKey|$playing|$vol|${state?.lastPositionUpdateTime}|$duration"
+        val muted = audio.isStreamMute(AudioManager.STREAM_MUSIC)
+        val key = "$artKey|$playing|$vol|$muted|${state?.lastPositionUpdateTime}|$duration"
         if (!force && key == lastKey) return
         lastKey = key
 
         val msg = JSONObject().put("t", "media")
             .put("app", app).put("title", title).put("artist", artist)
             .put("playing", playing).put("vol", vol).put("volMax", volMax)
+            .put("muted", muted)
             .put("pos", position).put("dur", duration).put("speed", (state?.playbackSpeed ?: 1f).toDouble())
 
         // Album art is only sent when the track changes, to keep messages small.
@@ -193,7 +202,7 @@ class MediaRelay(
         pkg
     }
 
-    /** Small JPEG (max 360 px) as one line of Base64. */
+    /** JPEG (max 640 px) as one line of Base64, sent once per song. */
     private fun encodeArt(source: Bitmap): String? = runCatching {
         val soft = if (source.config == Bitmap.Config.HARDWARE)
             source.copy(Bitmap.Config.ARGB_8888, false) else source
@@ -205,13 +214,13 @@ class MediaRelay(
             true
         ) else soft
         ByteArrayOutputStream().use { out ->
-            small.compress(Bitmap.CompressFormat.JPEG, 80, out)
+            small.compress(Bitmap.CompressFormat.JPEG, 85, out)
             Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
         }
     }.getOrNull()
 
     private companion object {
-        const val ART_SIZE = 360 // big enough for the full-screen player
+        const val ART_SIZE = 640 // sharp on the full-screen player
         val KNOWN_APPS = mapOf(
             "com.google.android.apps.youtube.music" to "YouTube Music",
             "com.google.android.youtube" to "YouTube",

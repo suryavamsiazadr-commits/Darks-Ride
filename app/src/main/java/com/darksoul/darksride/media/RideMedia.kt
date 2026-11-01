@@ -24,7 +24,11 @@ data class NowPlaying(
     val positionMs: Long = 0L,
     /** When that report arrived here (elapsedRealtime), to keep the clock running locally. */
     val reportedAt: Long = 0L,
-    val speed: Float = 1f
+    val speed: Float = 1f,
+    /** Media sound muted on the main phone (the level can still show e.g. 11). */
+    val muted: Boolean = false,
+    /** Two colours picked from the album art, for the background gradient (ARGB). */
+    val artColors: Pair<Int, Int>? = null
 ) {
     /** Where the song is right now. */
     fun positionNow(): Long {
@@ -74,7 +78,13 @@ object RideMedia {
             durationMs = msg.optLong("dur"),
             positionMs = msg.optLong("pos"),
             reportedAt = android.os.SystemClock.elapsedRealtime(),
-            speed = msg.optDouble("speed", 1.0).toFloat().takeIf { it > 0f } ?: 1f
+            speed = msg.optDouble("speed", 1.0).toFloat().takeIf { it > 0f } ?: 1f,
+            muted = msg.optBoolean("muted"),
+            artColors = when {
+                nothing -> null
+                msg.optBoolean("artNew") -> art?.let { ArtColors.from(it) }
+                else -> prev?.artColors
+            }
         )
     }
 

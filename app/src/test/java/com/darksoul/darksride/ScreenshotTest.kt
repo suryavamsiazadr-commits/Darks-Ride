@@ -145,6 +145,9 @@ class ScreenshotTest {
         com.darksoul.darksride.ui.CardMemory.set("music", true); music(); RideScreen()
     }
 
+    @Test @Config(qualifiers = "w480dp-h380dp-land-xhdpi")
+    fun fullMusicBesideMapsMuted() = shoot("full_music_beside_maps_muted") { music(muted = true); RideScreen() }
+
     // Real landscape heights once status / navigation bars take their share.
     @Test @Config(qualifiers = "w891dp-h340dp-land-xhdpi")
     fun wideShortDark() = shoot("wide_short_dark") { music(); route(); RideScreen() }
@@ -217,11 +220,11 @@ class ScreenshotTest {
         RideMedia.clear()
     }
 
-    private fun music() {
+    private fun music(muted: Boolean = false) {
         RideMedia.update(
             JSONObject().put("t", "media").put("app", "YouTube Music").put("title", "Kesariya (From \"Brahmastra\")")
                 .put("artist", "Pritam, Arijit Singh").put("playing", true).put("vol", 9).put("volMax", 15)
-                .put("pos", 83_000L).put("dur", 268_000L)
+                .put("pos", 83_000L).put("dur", 268_000L).put("muted", muted)
                 .put("artNew", true).put("art", fakeArt())
         )
     }

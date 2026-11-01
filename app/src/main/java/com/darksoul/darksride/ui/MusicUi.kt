@@ -2,6 +2,7 @@ package com.darksoul.darksride.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -100,7 +101,7 @@ fun NowPlayingCard(onExpand: (() -> Unit)? = null) {
 
     Box(modifier = Modifier.fillMaxWidth().rideSurface(28.dp, edge = colors.primary.copy(alpha = 0.45f))) {
         if (!open) {
-            ArtBackdrop(n, Fade.CARD)
+            SongGlow(n)
             Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 MusicTopRow(n, playing, open, onToggleOpen = { open = !open; CardMemory.set("music", open) }, onExpand = onExpand)
                 MiniPlayer(n, playing) { togglePlay(context) }
@@ -114,6 +115,7 @@ fun NowPlayingCard(onExpand: (() -> Unit)? = null) {
                 ArtBackdrop(n, Fade.HERO)
                 Column(Modifier.matchParentSize().padding(18.dp)) {
                     MusicTopRow(n, playing, open, onToggleOpen = { open = !open; CardMemory.set("music", open) }, onExpand = onExpand)
+                    if (n?.muted == true) MutedChip(n)
                     Box(Modifier.weight(1f))
                     TrackTitle(n, 26.sp, maxLines = 2)
                     TrackSubtitle(n)
@@ -151,7 +153,7 @@ fun MusicPanel(modifier: Modifier = Modifier, onExpand: (() -> Unit)? = null) {
         val playSize = when { roomy -> 88.dp; tight -> 56.dp; else -> 72.dp }
         val sideSize = when { roomy -> 64.dp; tight -> 48.dp; else -> 56.dp }
 
-        ArtBackdrop(n, if (w > h * 1.3f) Fade.SIDE else Fade.CARD)
+        SongGlow(n)
         Column(
             modifier = Modifier.fillMaxSize().padding(if (tight) 12.dp else 16.dp),
             verticalArrangement = Arrangement.SpaceBetween
@@ -167,6 +169,7 @@ fun MusicPanel(modifier: Modifier = Modifier, onExpand: (() -> Unit)? = null) {
                         if (onExpand != null) ExpandButton(onExpand)
                     }
                     TrackTitle(n, if (tight) 17.sp else 20.sp, maxLines = if (roomy) 2 else 1)
+                    if (n?.muted == true) MutedChip(n)
                     TrackSubtitle(n)
                 }
             }
@@ -206,46 +209,93 @@ fun MusicFullScreen(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
         val boxW = maxWidth
         val boxH = maxHeight
         val wide = boxW > boxH * 1.05f
-        // The album art fills the screen and fades away where the controls are.
-        ArtBackdrop(n, if (wide) Fade.SIDE else Fade.FULL)
-        val pad = 14.dp
+        // The song's own colours glow across the whole background; the cover stays sharp.
+        SongGlow(n)
+        val pad = 16.dp
         Column(Modifier.fillMaxSize().padding(pad), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // Top: what's playing on which app, and the way back to the cards.
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Equalizer(playing)
                 Text("  " + (n?.app?.ifEmpty { null } ?: "Music"), fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                    color = colors.primary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    color = colors.onSurface.copy(alpha = 0.85f), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f))
+                MutedChip(n)
                 Box(
-                    modifier = Modifier.rideButtonSurface(circle = false).clickable(onClick = onCollapse)
+                    modifier = Modifier.padding(start = 8.dp).rideButtonSurface(circle = false).clickable(onClick = onCollapse)
                         .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) { Text("Cards ▾", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface) }
             }
             if (wide) {
-                // Art shows on the left half; everything else sits on the faded right.
-                Row(Modifier.fillMaxWidth().weight(1f)) {
-                    Box(Modifier.weight(0.9f))
-                    Column(Modifier.weight(1.1f).fillMaxSize(), verticalArrangement = Arrangement.SpaceEvenly) {
-                        Column {
-                            TrackTitle(n, 24.sp, maxLines = 2)
-                            TrackSubtitle(n)
-                        }
-                        WaveProgress(n, Modifier.fillMaxWidth())
-                        Transport(playing, side = 58.dp, play = 80.dp)
-                        VolumeRow(n, button = 44.dp)
+                // Landscape / beside Maps: sharp cover left, song and time right,
+                // and the controls spread across the full width underneath.
+                val controls = if (boxH < 380.dp) 64.dp else 76.dp
+                val artSize = minOf(boxH - 48.dp - controls - pad * 3, boxW * 0.38f).coerceAtLeast(80.dp)
+                Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                    Art(n, artSize)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TrackTitle(n, 24.sp, maxLines = 2)
+                        TrackSubtitle(n)
+                        WaveProgress(n, Modifier.fillMaxWidth().padding(top = 6.dp))
+                        VolumeBar(n?.volume ?: 0, n?.volumeMax ?: 15, Modifier.fillMaxWidth().padding(top = 4.dp))
                     }
                 }
+                Transport(playing, side = controls * 0.78f, play = controls, volume = true)
             } else {
-                // Tall: art across the top; title, time, controls and volume over the fade.
-                val short = boxH < 520.dp
-                Box(Modifier.weight(1f))
-                TrackTitle(n, if (short) 24.sp else 28.sp, maxLines = 2)
-                TrackSubtitle(n)
-                WaveProgress(n, Modifier.fillMaxWidth())
-                Transport(playing, side = if (short) 54.dp else 62.dp, play = if (short) 72.dp else 88.dp)
+                // Tall: big sharp cover, then song, time, controls and volume.
+                val short = boxH < 560.dp
+                val artSize = minOf(boxW - pad * 2 - 24.dp, boxH * if (short) 0.30f else 0.40f)
+                Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceEvenly) {
+                    Art(n, artSize)
+                    Column(Modifier.fillMaxWidth()) {
+                        TrackTitle(n, if (short) 22.sp else 26.sp, maxLines = 2, center = true)
+                        TrackSubtitle(n, center = true)
+                    }
+                    WaveProgress(n, Modifier.fillMaxWidth())
+                    Transport(playing, side = if (short) 54.dp else 62.dp, play = if (short) 72.dp else 88.dp)
+                }
                 VolumeRow(n, button = if (short) 44.dp else 50.dp)
             }
         }
     }
+}
+
+/**
+ * Background glow in the song's colours (picked from its cover), fading into the page.
+ * Changes smoothly from song to song. No cover: the theme colours.
+ */
+@Composable
+private fun BoxScope.SongGlow(n: NowPlaying?) {
+    val glass = LocalGlass.current
+    val colors = MaterialTheme.colorScheme
+    val picked = n?.artColors
+    val c1 = picked?.let { Color(it.first) } ?: colors.primary
+    val c2 = picked?.let { Color(it.second) } ?: glass.accent2
+    val a by animateColorAsState(c1, tween(900), label = "glow1")
+    val b by animateColorAsState(c2, tween(900), label = "glow2")
+    val base = glass.backgroundBottom
+    // Dark: deep, rich colours. Light: soft pastel washes.
+    val strength = if (glass.isDark) 0.55f else 0.35f
+    Box(Modifier.matchParentSize().background(base))
+    Box(Modifier.matchParentSize().background(Brush.linearGradient(listOf(
+        a.copy(alpha = strength), b.copy(alpha = strength * 0.8f), base.copy(alpha = 0.6f)))))
+    // A gentle shade at the bottom keeps the buttons crisp.
+    Box(Modifier.matchParentSize().background(Brush.verticalGradient(
+        0.55f to Color.Transparent, 1f to base.copy(alpha = 0.55f))))
+}
+
+/** "Muted on phone · Unmute": the main phone's media sound is muted. */
+@Composable
+private fun MutedChip(n: NowPlaying?) {
+    if (n?.muted != true) return
+    val context = LocalContext.current
+    Box(
+        modifier = Modifier.padding(start = 8.dp)
+            .rideButtonSurface(circle = false, fill = Brush.linearGradient(listOf(Color(0xFFE5484D), Color(0xFFB8323A))))
+            .rideTap(onTap = { send(context, "unmute") })
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) { Text("Muted on phone · Unmute", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1) }
 }
 
 // ---------- Pieces ----------
@@ -293,7 +343,7 @@ private fun BoxScope.ArtBackdrop(n: NowPlaying?, fade: Fade) {
     ) {
         Image(
             bitmap = art, contentDescription = null, contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize().scale(if (playing) zoom else 1f)
+            modifier = Modifier.matchParentSize()
         )
         // A soft shade so white (or dark) text on the art stays readable.
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(
