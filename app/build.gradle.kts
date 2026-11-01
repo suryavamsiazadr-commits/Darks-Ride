@@ -35,12 +35,10 @@ android {
             signingConfig = signingConfigs.getByName("shared")
         }
         release {
-            // Optimised build for real rides (much smoother than debug), same shared key.
+            // Release build for real rides (not debuggable, so much smoother than debug), same shared key.
+            // Code shrinking/optimisation (R8) stays off: its library optimisation broke Kotlin's
+            // collection classes and crashed the app at start (v1.0).
             signingConfig = signingConfigs.getByName("shared")
-            optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
-            }
         }
     }
     compileOptions {
