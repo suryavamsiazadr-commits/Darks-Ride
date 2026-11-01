@@ -1,0 +1,34 @@
+Starting: Intent { cmp=com.darksoul.darksride/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.darksoul.darksride/.MainActivity
+TotalTime: 2521
+WaitTime: 2544
+Complete
+tapped Handlebar HQ
+Starting: Intent { cmp=com.darksoul.darksride/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.darksoul.darksride/.MainActivity
+TotalTime: 1983
+WaitTime: 1988
+Complete
+not found: settings
+Starting: Intent { cmp=com.darksoul.darksride/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.darksoul.darksride/.MainActivity
+TotalTime: 1902
+WaitTime: 1926
+Complete
+tapped Pocket Sherpa
+Starting: Intent { cmp=com.darksoul.darksride/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.darksoul.darksride/.MainActivity
+TotalTime: 2299
+WaitTime: 2404
+Complete
+tapped Garage
+tapped Documents
+tapped This phone has no screen lock, so the folder can't be protected. Set a PIN or fingerprint in Settings → Security for real protection.
