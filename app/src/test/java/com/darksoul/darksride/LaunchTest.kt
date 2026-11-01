@@ -19,7 +19,6 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowLooper
-import java.time.Duration
 
 /**
  * Opens the real app (MainActivity) as each phone, in both styles, portrait and landscape,
@@ -45,7 +44,7 @@ class LaunchTest {
             RideMedia.clear()
         }
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            ShadowLooper.idleMainLooper(Duration.ofSeconds(3))
+            ShadowLooper.idleMainLooper(3, java.util.concurrent.TimeUnit.SECONDS)
             scenario.onActivity { }
         }
         assertNull("App crashed", CrashCatcher.lastCrash(ctx))
