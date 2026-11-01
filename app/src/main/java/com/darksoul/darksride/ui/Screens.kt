@@ -359,16 +359,9 @@ private fun pairedDevices(adapter: BluetoothAdapter): List<PairedDevice> = try {
     emptyList()
 }
 
-private fun linkPermissions(): Array<String> =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.POST_NOTIFICATIONS)
-    } else {
-        arrayOf(Manifest.permission.BLUETOOTH_CONNECT)
-    }
+private fun linkPermissions(): Array<String> = com.darksoul.darksride.Perms.linkPermissions()
 
-private fun hasBluetoothAccess(c: Context): Boolean =
-    ContextCompat.checkSelfPermission(c, Manifest.permission.BLUETOOTH_CONNECT) ==
-        PackageManager.PERMISSION_GRANTED
+private fun hasBluetoothAccess(c: Context): Boolean = com.darksoul.darksride.Perms.bluetooth(c)
 
 /** Bike phone: run Dark's Ride and Google Maps side by side (Android split screen). */
 @Composable

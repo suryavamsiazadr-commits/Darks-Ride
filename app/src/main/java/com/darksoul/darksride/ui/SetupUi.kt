@@ -228,7 +228,7 @@ private fun SetupDialog(
 }
 
 private fun setupItems(c: Context, mode: AppMode): List<SetupItem> {
-    val bluetooth = granted(c, Manifest.permission.BLUETOOTH_CONNECT)
+    val bluetooth = com.darksoul.darksride.Perms.bluetooth(c)
     val background = c.getSystemService(PowerManager::class.java)
         .isIgnoringBatteryOptimizations(c.packageName)
     return when (mode) {

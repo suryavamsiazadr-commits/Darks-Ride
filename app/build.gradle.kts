@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.darksoul.darksride"
-        minSdk = 31
+        minSdk = 30
         targetSdk = 37
         versionCode = 6
         versionName = "1.0.5"

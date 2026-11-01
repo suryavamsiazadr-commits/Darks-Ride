@@ -20,9 +20,7 @@ class StartupReceiver : BroadcastReceiver() {
             else -> return
         }
         if (!AppPrefs.linkEnabled(context) || !AppPrefs.readyToLink(context)) return
-        val granted = ContextCompat.checkSelfPermission(
-            context, Manifest.permission.BLUETOOTH_CONNECT
-        ) == PackageManager.PERMISSION_GRANTED
+        val granted = com.darksoul.darksride.Perms.bluetooth(context)
         if (!granted) return
         try {
             LinkService.resume(context, reason)

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Android 12+: launch screen with the Dark's Ride icon on night black -->
+    <style name="Theme.DarksRide" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF000000</item>
+        <item name="android:windowSplashScreenBackground">#FF000000</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#FF0A0A0A</item>
+    </style>
+</resources>

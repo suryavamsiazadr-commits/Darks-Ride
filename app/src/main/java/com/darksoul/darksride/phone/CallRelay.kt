@@ -57,11 +57,26 @@ class CallRelay(
     private var rejectedByRider = false
     private var lastSentKey: String? = null
 
-    private val callStateCallback = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
-        override fun onCallStateChanged(state: Int) {
-            handler.post { onSimState(state) }
-        }
-    }
+    // Android 12+: TelephonyCallback. Android 11: the older PhoneStateListener.
+    private val callStateCallback: Any? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            object : TelephonyCallback(), TelephonyCallback.CallStateListener {
+                override fun onCallStateChanged(state: Int) {
+                    handler.post { onSimState(state) }
+                }
+            }
+        } else null
+
+    @Suppress("DEPRECATION")
+    private val legacyListener: android.telephony.PhoneStateListener? =
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            object : android.telephony.PhoneStateListener() {
+                @Deprecated("Android 11 only")
+                override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                    handler.post { onSimState(state) }
+                }
+            }
+        } else null
 
     init {
         active = this
@@ -73,7 +88,12 @@ class CallRelay(
         handler.post {
             if (registered) return@post
             try {
-                telephony.registerTelephonyCallback(context.mainExecutor, callStateCallback)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    telephony.registerTelephonyCallback(context.mainExecutor, callStateCallback as TelephonyCallback)
+                } else {
+                    @Suppress("DEPRECATION")
+                    telephony.listen(legacyListener, android.telephony.PhoneStateListener.LISTEN_CALL_STATE)
+                }
                 registered = true
                 LinkState.log("Call control ready")
             } catch (e: SecurityException) {
@@ -84,7 +104,14 @@ class CallRelay(
 
     fun stop() {
         handler.post {
-            if (registered) runCatching { telephony.unregisterTelephonyCallback(callStateCallback) }
+            if (registered) runCatching {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    telephony.unregisterTelephonyCallback(callStateCallback as TelephonyCallback)
+                } else {
+                    @Suppress("DEPRECATION")
+                    telephony.listen(legacyListener, android.telephony.PhoneStateListener.LISTEN_NONE)
+                }
+            }
             registered = false
         }
         if (active === this) active = null
