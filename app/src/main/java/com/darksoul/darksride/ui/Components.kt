@@ -288,8 +288,7 @@ internal fun StatusPill(status: LinkStatus, peer: String?, mode: AppMode) {
     val (label, dot) = when (status) {
         LinkStatus.CONNECTED -> (peer ?: "Connected") to Go
         LinkStatus.CONNECTING -> "Connecting…" to colors.primary
-        LinkStatus.WAITING ->
-            (if (mode == AppMode.RIDE) "Waiting for phone" else "Looking for bike") to colors.primary
+        LinkStatus.WAITING -> (if (mode == AppMode.RIDE) "Waiting" else "Looking") to colors.primary
         LinkStatus.STOPPED -> "Link off" to Color.Gray
     }
     val shape = RoundedCornerShape(50)

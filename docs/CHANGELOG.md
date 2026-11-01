@@ -2,6 +2,11 @@
 
 How Dark's Ride grew, step by step. Dates are when the change landed on `main`.
 
+## v1.0.6 — 2026-11-01
+
+- **Android 11 supported** (e.g. Realme XT): the app now installs on Android 11 and newer (was 12+). Uses Android 11's Bluetooth permissions and call detection; checked on an Android 11 emulator on every build.
+- Shorter link status ("Waiting" / "Looking") so the title isn't cut off.
+
 ## v1.0.5 — 2026-11-01
 
 - **Fixed:** with the link off (Ride mode off), a "Dark's Ride" notification could stay in the notification panel. The link loop could post its status once more just after shutting down; nothing posts after shutdown now, and the notification is removed when the link stops (a leftover one is cleared when the app starts).

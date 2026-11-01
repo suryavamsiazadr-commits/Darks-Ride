@@ -1,6 +1,6 @@
 # How Dark's Ride works
 
-Kotlin, Jetpack Compose, one module (`app`). Package `com.darksoul.darksride`. minSdk 31 (Android 12), target 37.
+Kotlin, Jetpack Compose, one module (`app`). Package `com.darksoul.darksride`. minSdk 30 (Android 11), target 37.
 
 ## The two roles
 
