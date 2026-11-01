@@ -73,6 +73,12 @@ import kotlin.math.sin
 
 private fun send(c: android.content.Context, action: String) = LinkService.sendCommand(c, action)
 
+/** Play / pause: the button changes at once; the main phone confirms a moment later. */
+private fun togglePlay(c: android.content.Context) {
+    RideMedia.togglePlaying()
+    send(c, "toggle")
+}
+
 // ---------- Portrait card ----------
 
 /**
@@ -89,18 +95,32 @@ fun NowPlayingCard(onExpand: (() -> Unit)? = null) {
     val playing = n?.playing == true
 
     Box(modifier = Modifier.fillMaxWidth().rideSurface(28.dp, edge = colors.primary.copy(alpha = 0.45f))) {
-        ArtBackdrop(n)
-        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            MusicTopRow(n, playing, open, onToggleOpen = { open = !open; CardMemory.set("music", open) }, onExpand = onExpand)
-            if (!open) {
-                MiniPlayer(n, playing) { send(context, "toggle") }
+        if (!open) {
+            ArtBackdrop(n, Fade.CARD)
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                MusicTopRow(n, playing, open, onToggleOpen = { open = !open; CardMemory.set("music", open) }, onExpand = onExpand)
+                MiniPlayer(n, playing) { togglePlay(context) }
                 WaveProgress(n, Modifier.fillMaxWidth(), showTimes = false)
-                return@Column
             }
-            TrackHeader(n, artSize = 116.dp)
-            WaveProgress(n, Modifier.fillMaxWidth())
-            Transport(playing, side = 72.dp, play = 100.dp)
-            VolumeRow(n)
+            return@Box
+        }
+        Column {
+            // The album art spread across the top of the card, fading into it, title on top.
+            Box(Modifier.fillMaxWidth().height(230.dp)) {
+                ArtBackdrop(n, Fade.HERO)
+                Column(Modifier.matchParentSize().padding(18.dp)) {
+                    MusicTopRow(n, playing, open, onToggleOpen = { open = !open; CardMemory.set("music", open) }, onExpand = onExpand)
+                    Box(Modifier.weight(1f))
+                    TrackTitle(n, 26.sp, maxLines = 2)
+                    TrackSubtitle(n)
+                }
+            }
+            Column(modifier = Modifier.padding(start = 18.dp, end = 18.dp, bottom = 18.dp, top = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                WaveProgress(n, Modifier.fillMaxWidth())
+                Transport(playing, side = 72.dp, play = 96.dp)
+                VolumeRow(n)
+            }
         }
     }
 }
@@ -127,7 +147,7 @@ fun MusicPanel(modifier: Modifier = Modifier, onExpand: (() -> Unit)? = null) {
         val playSize = when { roomy -> 88.dp; tight -> 56.dp; else -> 72.dp }
         val sideSize = when { roomy -> 64.dp; tight -> 48.dp; else -> 56.dp }
 
-        ArtBackdrop(n)
+        ArtBackdrop(n, if (w > h * 1.3f) Fade.SIDE else Fade.CARD)
         Column(
             modifier = Modifier.fillMaxSize().padding(if (tight) 12.dp else 16.dp),
             verticalArrangement = Arrangement.SpaceBetween
@@ -179,10 +199,11 @@ fun MusicFullScreen(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
     val playing = n?.playing == true
 
     BoxWithConstraints(modifier = modifier.fillMaxSize().rideBackground()) {
-        ArtBackdrop(n, strong = true)
         val boxW = maxWidth
         val boxH = maxHeight
         val wide = boxW > boxH * 1.05f
+        // The album art fills the screen and fades away where the controls are.
+        ArtBackdrop(n, if (wide) Fade.SIDE else Fade.FULL)
         val pad = 14.dp
         Column(Modifier.fillMaxSize().padding(pad), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // Top: what's playing on which app, and the way back to the cards.
@@ -196,63 +217,74 @@ fun MusicFullScreen(onCollapse: () -> Unit, modifier: Modifier = Modifier) {
                 ) { Text("Cards ▾", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface) }
             }
             if (wide) {
-                // Square-ish or landscape: art on the left, everything else on the right.
-                val art = minOf(boxH - 90.dp, boxW * 0.42f)
-                Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Art(n, art, breathe = true)
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        TrackTitle(n, 22.sp, maxLines = 2)
-                        TrackSubtitle(n)
+                // Art shows on the left half; everything else sits on the faded right.
+                Row(Modifier.fillMaxWidth().weight(1f)) {
+                    Box(Modifier.weight(0.9f))
+                    Column(Modifier.weight(1.1f).fillMaxSize(), verticalArrangement = Arrangement.SpaceEvenly) {
+                        Column {
+                            TrackTitle(n, 24.sp, maxLines = 2)
+                            TrackSubtitle(n)
+                        }
                         WaveProgress(n, Modifier.fillMaxWidth())
-                        Transport(playing, side = 60.dp, play = 84.dp)
+                        Transport(playing, side = 58.dp, play = 80.dp)
+                        VolumeRow(n, button = 44.dp)
                     }
                 }
             } else {
-                // Tall: art on top, then title, progress and controls (smaller on short screens).
+                // Tall: art across the top; title, time, controls and volume over the fade.
                 val short = boxH < 520.dp
-                val art = minOf(boxW - pad * 2 - 40.dp, boxH * if (short) 0.24f else 0.36f)
-                Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceEvenly) {
-                    Art(n, art, breathe = true)
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        TrackTitle(n, 22.sp, maxLines = 1, center = true)
-                        TrackSubtitle(n, center = true)
-                    }
-                    WaveProgress(n, Modifier.fillMaxWidth())
-                    Transport(playing, side = if (short) 52.dp else 60.dp, play = if (short) 68.dp else 84.dp)
-                }
+                Box(Modifier.weight(1f))
+                TrackTitle(n, if (short) 24.sp else 28.sp, maxLines = 2)
+                TrackSubtitle(n)
+                WaveProgress(n, Modifier.fillMaxWidth())
+                Transport(playing, side = if (short) 54.dp else 62.dp, play = if (short) 72.dp else 88.dp)
+                VolumeRow(n, button = if (short) 44.dp else 50.dp)
             }
-            VolumeRow(n, button = if (boxH < 520.dp) 44.dp else 48.dp)
         }
     }
 }
 
 // ---------- Pieces ----------
 
-/** The album art, blurred big behind the card (glass style). */
+/** How the album art fades into the card or screen. */
+private enum class Fade { CARD, HERO, FULL, SIDE }
+
+/**
+ * The album art spread edge to edge, sharp, fading into the page colour where text and
+ * buttons sit: HERO / FULL fade towards the bottom, SIDE towards the right, CARD dims it
+ * all evenly behind a full card. No art: a soft wash of the theme colours.
+ */
 @Composable
-private fun BoxScope.ArtBackdrop(n: NowPlaying?, strong: Boolean = false) {
+private fun BoxScope.ArtBackdrop(n: NowPlaying?, fade: Fade) {
     val glass = LocalGlass.current
     val colors = MaterialTheme.colorScheme
     val art = n?.art
-    if (art != null && (!glass.soft || strong)) {
-        Image(
-            bitmap = art, contentDescription = null, contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize().blur(40.dp)
-                .alpha(if (glass.isDark) (if (strong) 0.7f else 0.55f) else (if (strong) 0.45f else 0.32f))
-        )
+    val base = glass.backgroundBottom
+    if (art == null) {
+        Box(Modifier.matchParentSize().background(Brush.linearGradient(listOf(
+            colors.primary.copy(alpha = if (glass.isDark) 0.28f else 0.18f),
+            glass.accent2.copy(alpha = 0.10f),
+            Color.Transparent))))
+        return
     }
-    Box(
-        Modifier.matchParentSize().background(
-            Brush.verticalGradient(
-                listOf(
-                    colors.primary.copy(alpha = if (glass.soft) 0.06f else 0.16f),
-                    glass.backgroundBottom.copy(alpha = if (art != null) (if (strong) 0.55f else 0.72f) else 0f)
-                )
-            )
-        )
+    val playing = n.playing
+    val t = rememberInfiniteTransition(label = "drift")
+    // A slow, gentle zoom while the music plays.
+    val zoom by t.animateFloat(1f, 1.06f, infiniteRepeatable(tween(9000), RepeatMode.Reverse), label = "zoom")
+    Image(
+        bitmap = art, contentDescription = null, contentScale = ContentScale.Crop,
+        modifier = Modifier.matchParentSize().scale(if (playing) zoom else 1f)
     )
+    val scrim = when (fade) {
+        Fade.FULL -> Brush.verticalGradient(0f to base.copy(alpha = 0.25f), 0.3f to Color.Transparent,
+            0.5f to base.copy(alpha = 0.55f), 0.66f to base.copy(alpha = 0.92f), 1f to base)
+        Fade.HERO -> Brush.verticalGradient(0f to base.copy(alpha = 0.35f), 0.35f to Color.Transparent,
+            0.7f to base.copy(alpha = 0.6f), 1f to glass.card.copy(alpha = 1f).takeIf { glass.soft } ?: base.copy(alpha = 0.97f))
+        Fade.SIDE -> Brush.horizontalGradient(0f to Color.Transparent, 0.3f to base.copy(alpha = 0.25f),
+            0.5f to base.copy(alpha = 0.85f), 0.62f to base.copy(alpha = 0.96f), 1f to base)
+        Fade.CARD -> Brush.verticalGradient(0f to base.copy(alpha = 0.55f), 1f to base.copy(alpha = 0.9f))
+    }
+    Box(Modifier.matchParentSize().background(scrim))
 }
 
 @Composable
@@ -351,7 +383,7 @@ private fun Transport(playing: Boolean, side: Dp, play: Dp, volume: Boolean = fa
             }
         }
         RoundButton(R.drawable.ic_prev, "Previous", side) { send(context, "prev") }
-        PlayButton(playing, play) { send(context, "toggle") }
+        PlayButton(playing, play) { togglePlay(context) }
         RoundButton(R.drawable.ic_next, "Next", side) { send(context, "next") }
         if (volume) {
             RoundButton(R.drawable.ic_volume_up, "Volume up", side * 0.85f, repeat = true) {

@@ -153,14 +153,19 @@ fun RideDashboard(
     val playing = now?.playing == true
     // Full-screen music: on by itself when music plays beside Maps / on the small screen
     // (Settings), or any time with ⤢. "Cards ▾" goes back until the next time music starts.
+    // null = not decided yet; true = full screen; false = you chose the cards.
+    // Full screen opens once when music starts and then STAYS (pause / play / track changes
+    // never flip it). "Cards ▾" keeps the cards until you tap ⤢ or open the app again.
     var focus by remember { mutableStateOf<Boolean?>(null) }
-    LaunchedEffect(playing) { if (playing) focus = null }
     val autoFull = remember { AppPrefs.flag(context, AppPrefs.MUSIC_FULL) }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().rideBackground().windowInsetsPadding(insets)) {
         val layout = rideLayoutFor(maxWidth, maxHeight)
         val h = maxHeight
-        val full = focus ?: (autoFull && playing && layout == RideLayout.COMPACT)
+        LaunchedEffect(playing, layout) {
+            if (focus == null && autoFull && playing && layout == RideLayout.COMPACT) focus = true
+        }
+        val full = focus == true
         if (full) {
             MusicFullScreen(onCollapse = { focus = false })
             FullScreenPopups(h)

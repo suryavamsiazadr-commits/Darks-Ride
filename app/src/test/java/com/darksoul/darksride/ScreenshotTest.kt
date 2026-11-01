@@ -135,6 +135,16 @@ class ScreenshotTest {
         SettingsScreen(mode = AppMode.MAIN, onChangeRole = {})
     }
 
+    @Test @Config(qualifiers = "w411dp-h891dp-port-xhdpi")
+    fun musicOpenGlass() = shoot("music_open_glass") {
+        com.darksoul.darksride.ui.CardMemory.set("music", true); music(); route(); RideScreen()
+    }
+
+    @Test @Config(qualifiers = "w411dp-h891dp-port-xhdpi")
+    fun musicOpenSoftLight() = shoot("music_open_soft_light", dark = false, style = UiStyle.SOFT) {
+        com.darksoul.darksride.ui.CardMemory.set("music", true); music(); RideScreen()
+    }
+
     // Real landscape heights once status / navigation bars take their share.
     @Test @Config(qualifiers = "w891dp-h340dp-land-xhdpi")
     fun wideShortDark() = shoot("wide_short_dark") { music(); route(); RideScreen() }

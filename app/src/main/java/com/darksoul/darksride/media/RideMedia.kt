@@ -39,7 +39,23 @@ object RideMedia {
     private val _now = MutableStateFlow<NowPlaying?>(null)
     val now: StateFlow<NowPlaying?> = _now.asStateFlow()
 
+    // After a tap on the bike, the main phone's next reports can still carry the old value
+    // (e.g. volume 6, 7, 8 while you're already at 10). Keep what you set for a moment.
+    private const val HOLD_MS = 1_500L
+    private var holdVolumeUntil = 0L
+    private var holdPlayingUntil = 0L
+    private var lastMsg: JSONObject? = null
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+    private val applyLast = Runnable { lastMsg?.let { apply(it) } }
+
     fun update(msg: JSONObject) {
+        lastMsg = msg
+        apply(msg)
+    }
+
+    private fun apply(msg: JSONObject) {
+        val nowMs = android.os.SystemClock.elapsedRealtime()
+        val prev = _now.value
         val nothing = msg.optBoolean("none")
         val art = when {
             nothing -> null
@@ -51,9 +67,9 @@ object RideMedia {
             app = msg.optString("app"),
             title = msg.optString("title"),
             artist = msg.optString("artist"),
-            playing = msg.optBoolean("playing"),
+            playing = if (prev != null && nowMs < holdPlayingUntil) prev.playing else msg.optBoolean("playing"),
             art = art,
-            volume = msg.optInt("vol"),
+            volume = if (prev != null && nowMs < holdVolumeUntil) prev.volume else msg.optInt("vol"),
             volumeMax = msg.optInt("volMax", 15).coerceAtLeast(1),
             durationMs = msg.optLong("dur"),
             positionMs = msg.optLong("pos"),
@@ -66,6 +82,22 @@ object RideMedia {
     fun nudgeVolume(delta: Int) {
         val n = _now.value ?: return
         _now.value = n.copy(volume = (n.volume + delta).coerceIn(0, n.volumeMax))
+        hold { holdVolumeUntil = it }
+    }
+
+    /** Play / pause tapped: flip at once (and stop or restart the song clock). */
+    fun togglePlaying() {
+        val n = _now.value ?: return
+        val t = android.os.SystemClock.elapsedRealtime()
+        _now.value = n.copy(playing = !n.playing, positionMs = n.positionNow(), reportedAt = t)
+        hold { holdPlayingUntil = it }
+    }
+
+    /** Hold the local value, then settle on whatever the main phone said last. */
+    private fun hold(set: (Long) -> Unit) {
+        set(android.os.SystemClock.elapsedRealtime() + HOLD_MS)
+        main.removeCallbacks(applyLast)
+        main.postDelayed(applyLast, HOLD_MS + 50)
     }
 
     fun clear() {
