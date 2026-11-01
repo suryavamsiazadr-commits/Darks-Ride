@@ -94,10 +94,17 @@ class LinkService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        // Minimum importance: Android requires this notification while the link runs, but it
+        // stays silent, has no status-bar icon and sits collapsed at the bottom of the panel.
+        val nm = getSystemService(NotificationManager::class.java)
+        runCatching { nm.deleteNotificationChannel("link") } // the old, louder channel
         val channel = NotificationChannel(
-            CHANNEL_ID, "Phone link", NotificationManager.IMPORTANCE_LOW
-        ).apply { description = "Shows while Dark's Ride keeps your phones linked" }
-        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+            CHANNEL_ID, "Phone link", NotificationManager.IMPORTANCE_MIN
+        ).apply {
+            description = "Required by Android while Dark's Ride keeps your phones linked"
+            setShowBadge(false)
+        }
+        nm.createNotificationChannel(channel)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -158,7 +165,11 @@ class LinkService : Service() {
         return START_STICKY
     }
 
+    /** Set while shutting down: nothing may post the notification again after this. */
+    @Volatile private var destroyed = false
+
     override fun onDestroy() {
+        destroyed = true
         loopJob?.cancel()
         closeSockets()
         mediaRelay?.stop()
@@ -177,6 +188,9 @@ class LinkService : Service() {
         scope.cancel()
         LinkState.setStatus(LinkStatus.STOPPED)
         LinkState.log("Link stopped")
+        // Link off: no "Dark's Ride" notification left behind (nor the internet nudge).
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        clearNotifications(this)
         super.onDestroy()
     }
 
@@ -212,12 +226,17 @@ class LinkService : Service() {
             .addAction(0, "Turn off ride mode", turnOff)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
 
     private fun setStatus(status: LinkStatus, peer: String? = null) {
         LinkState.setStatus(status, peer)
+        // After shutdown (or when the link stops) don't post: the notification would stay
+        // behind on its own, with nothing running.
+        if (destroyed || status == LinkStatus.STOPPED) return
         if (status == lastStatus && status != LinkStatus.CONNECTED) return
         lastStatus = status
         val text = when (status) {
@@ -275,6 +294,7 @@ class LinkService : Service() {
             } catch (e: SecurityException) {
                 LinkState.log("Bluetooth access was removed. Open the app to allow it again.")
                 setStatus(LinkStatus.STOPPED)
+                stopSelf()
             }
         }
     }
@@ -320,6 +340,7 @@ class LinkService : Service() {
         if (address == null) {
             LinkState.log("Pick the ride phone first")
             setStatus(LinkStatus.STOPPED)
+            stopSelf()
             return
         }
         LinkState.log("Looking for ${AppPrefs.rideName(this) ?: "the ride phone"}")
@@ -505,7 +526,7 @@ class LinkService : Service() {
         /** Shared by both phones so they find each other's Dark's Ride service. */
         val APP_UUID: UUID = UUID.fromString("6f1d2c3b-8a4e-4b7f-9c2d-1e5a7b9c3d42")
         private const val SERVICE_NAME = "DarksRide"
-        private const val CHANNEL_ID = "link"
+        private const val CHANNEL_ID = "link_quiet"
         private const val NOTIFICATION_ID = 1
 
         private const val ACTION_START = "com.darksoul.darksride.START"
@@ -544,6 +565,13 @@ class LinkService : Service() {
          * The off switch: stops the link and music/message watching, and keeps it all off
          * (also after a phone restart) until the rider opens Dark's Ride again.
          */
+        /** Removes Dark's Ride's status notification (and the bike-internet nudge). */
+        fun clearNotifications(c: Context) {
+            val nm = c.getSystemService(NotificationManager::class.java) ?: return
+            runCatching { nm.cancel(NOTIFICATION_ID) }
+            runCatching { nm.cancel(7) } // BikeNet's "needs internet" nudge
+        }
+
         fun turnOff(c: Context) {
             prepareTurnOff(c)
             c.stopService(Intent(c, LinkService::class.java))

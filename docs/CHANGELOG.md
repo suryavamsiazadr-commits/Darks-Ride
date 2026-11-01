@@ -2,6 +2,11 @@
 
 How Dark's Ride grew, step by step. Dates are when the change landed on `main`.
 
+## v1.0.5 — 2026-11-01
+
+- **Fixed:** with the link off (Ride mode off), a "Dark's Ride" notification could stay in the notification panel. The link loop could post its status once more just after shutting down; nothing posts after shutdown now, and the notification is removed when the link stops (a leftover one is cleared when the app starts).
+- While Ride mode is on, the required link notification is now as quiet as Android allows: no sound, no status-bar icon, collapsed at the bottom of the panel.
+
 ## v1.0.4 — 2026-11-01
 
 - **Music looks clean:** the stretched, blurry cover behind the player is gone. The cover now sits sharp as a square, and the whole background glows in a gradient made from the song's own colours (it changes smoothly with each song). The main phone sends a sharper cover (640 px).

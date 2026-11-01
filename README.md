@@ -7,7 +7,7 @@ A free, personal Android app that turns a spare phone on your motorcycle into a 
 
 Built and ridden on a Samsung Galaxy S25 Ultra (Pocket Sherpa) and an LG Wing (Handlebar HQ) on a Royal Enfield Himalayan 450. Works with any two Android 12+ phones.
 
-> Latest release: **v1.0.4** — see the [Releases](../../releases) page.
+> Latest release: **v1.0.5** — see the [Releases](../../releases) page.
 > What changed and when: [docs/CHANGELOG.md](docs/CHANGELOG.md) · How it works inside: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Building and releasing: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
 ---

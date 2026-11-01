@@ -14,6 +14,8 @@ class DarksRideApp : Application() {
         com.darksoul.darksride.ui.theme.ThemeController.init(this)
         com.darksoul.darksride.net.BikeNet.watch(this)
         AppVisibility.track(this)
+        // Ride mode off: clear a status notification an older version may have left behind.
+        if (!AppPrefs.linkEnabled(this)) com.darksoul.darksride.link.LinkService.clearNotifications(this)
         // App opened: floating cards step aside (the app shows it all); closed: they come back.
         AppVisibility.onChange = { open ->
             if (open) RideOverlay.hideAll()
