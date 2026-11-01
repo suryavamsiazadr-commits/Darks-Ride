@@ -48,7 +48,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -271,20 +275,30 @@ private fun BoxScope.ArtBackdrop(n: NowPlaying?, fade: Fade) {
     val t = rememberInfiniteTransition(label = "drift")
     // A slow, gentle zoom while the music plays.
     val zoom by t.animateFloat(1f, 1.06f, infiniteRepeatable(tween(9000), RepeatMode.Reverse), label = "zoom")
-    Image(
-        bitmap = art, contentDescription = null, contentScale = ContentScale.Crop,
-        modifier = Modifier.matchParentSize().scale(if (playing) zoom else 1f)
-    )
-    val scrim = when (fade) {
-        Fade.FULL -> Brush.verticalGradient(0f to base.copy(alpha = 0.25f), 0.3f to Color.Transparent,
-            0.5f to base.copy(alpha = 0.55f), 0.66f to base.copy(alpha = 0.92f), 1f to base)
-        Fade.HERO -> Brush.verticalGradient(0f to base.copy(alpha = 0.35f), 0.35f to Color.Transparent,
-            0.7f to base.copy(alpha = 0.6f), 1f to (if (glass.soft) glass.card else base.copy(alpha = 0.97f)))
-        Fade.SIDE -> Brush.horizontalGradient(0f to Color.Transparent, 0.3f to base.copy(alpha = 0.25f),
-            0.5f to base.copy(alpha = 0.85f), 0.62f to base.copy(alpha = 0.96f), 1f to base)
-        Fade.CARD -> Brush.verticalGradient(0f to base.copy(alpha = 0.55f), 1f to base.copy(alpha = 0.9f))
+    // The art itself fades out (a transparency mask), so it melts into whatever is behind it:
+    // no seam in glass or soft, light or dark.
+    val mask = when (fade) {
+        Fade.FULL -> Brush.verticalGradient(0f to Color.Black, 0.3f to Color.Black, 0.5f to Color.Black.copy(alpha = 0.55f), 0.72f to Color.Transparent)
+        Fade.HERO -> Brush.verticalGradient(0f to Color.Black, 0.45f to Color.Black.copy(alpha = 0.9f), 1f to Color.Transparent)
+        Fade.SIDE -> Brush.horizontalGradient(0f to Color.Black, 0.35f to Color.Black.copy(alpha = 0.8f), 0.62f to Color.Transparent)
+        Fade.CARD -> Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.45f), 1f to Color.Black.copy(alpha = 0.2f))
     }
-    Box(Modifier.matchParentSize().background(scrim))
+    Box(
+        Modifier.matchParentSize()
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                drawRect(mask, blendMode = BlendMode.DstIn)
+            }
+    ) {
+        Image(
+            bitmap = art, contentDescription = null, contentScale = ContentScale.Crop,
+            modifier = Modifier.matchParentSize().scale(if (playing) zoom else 1f)
+        )
+        // A soft shade so white (or dark) text on the art stays readable.
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(
+            base.copy(alpha = 0.35f), Color.Transparent, base.copy(alpha = 0.45f)))))
+    }
 }
 
 @Composable
