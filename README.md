@@ -7,7 +7,7 @@ A free, personal Android app that turns a spare phone on your motorcycle into a 
 
 Built and ridden on a Samsung Galaxy S25 Ultra (Pocket Sherpa) and an LG Wing (Handlebar HQ) on a Royal Enfield Himalayan 450. Works with any two Android 12+ phones.
 
-> Latest release: **v1.0.3** — see the [Releases](../../releases) page.
+> Latest release: **v1.0.4** — see the [Releases](../../releases) page.
 > What changed and when: [docs/CHANGELOG.md](docs/CHANGELOG.md) · How it works inside: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Building and releasing: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
 ---
@@ -15,7 +15,7 @@ Built and ridden on a Samsung Galaxy S25 Ultra (Pocket Sherpa) and an LG Wing (H
 ## Features
 
 ### On the bike (Handlebar HQ)
-- **Music** — album art blurred behind the card, title and artist, a live progress wave with running time, big previous / play / next, segmented volume. Works with YouTube Music, Spotify and any app that shows a media notification on the main phone.
+- **Music** — sharp album cover on a glow in the song's own colours, title and artist, a live progress wave with running time, big previous / play / next, segmented volume. Works with YouTube Music, Spotify and any app that shows a media notification on the main phone.
 - **Full-screen music** — beside Google Maps or on the LG Wing's small screen, music fills the screen while it plays. A call or a new message slides in over it.
 - **Calls** — incoming call card with huge Decline / Answer buttons, a running call timer and End call. Missed calls appear as messages.
 - **Messages** — WhatsApp and SMS (and other apps if you choose). A new message rises to the top for your spotlight time (5–60 s, default 10). Dismissing it here clears it on the main phone too.

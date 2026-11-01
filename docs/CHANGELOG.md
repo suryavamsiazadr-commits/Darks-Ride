@@ -2,6 +2,12 @@
 
 How Dark's Ride grew, step by step. Dates are when the change landed on `main`.
 
+## v1.0.4 — 2026-11-01
+
+- **Music looks clean:** the stretched, blurry cover behind the player is gone. The cover now sits sharp as a square, and the whole background glows in a gradient made from the song's own colours (it changes smoothly with each song). The main phone sends a sharper cover (640 px).
+- **Beside Google Maps:** cover on the left, song, time and volume on the right, and the controls spread across the full width underneath instead of crammed together.
+- **Fixed: music playing with no sound until a volume key was pressed.** The phone's media sound was muted while the level still showed (e.g. 11). Play / next / previous from the bike now unmutes it, and the bike shows **Muted on phone · Unmute** whenever media is muted.
+
 ## v1.0.3 — 2026-11-01
 
 - **Fixed:** tapping play / pause repeatedly flipped between full-screen music and the cards. Full screen now opens once when music starts and stays until you tap **Cards ▾** (pause, play and track changes don't move it).
