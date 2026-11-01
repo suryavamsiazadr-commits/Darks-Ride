@@ -170,7 +170,6 @@ fun LinkScreen(
 
             else -> {
                 RideModeCard(mode = mode, on = rideOn)
-                if (mode == AppMode.RIDE) InternetCard(mode)
                 // Setup lives in Settings; it only shows here while something is missing.
                 SetupCard(mode, hideWhenComplete = true)
 
@@ -182,7 +181,6 @@ fun LinkScreen(
                         BigButton("Start link", onClick = { LinkService.turnOn(context) })
                     }
                     SendToBikeCard()
-                    InternetCard(mode)
                 }
             }
         }
@@ -385,6 +383,15 @@ internal fun MapsBesideCard() {
         Body("Turn the phone sideways and run Google Maps and Dark's Ride next to each other: " +
             "Dark's Ride switches to a compact layout that fits its half with no scrolling.", dim = true)
         BigButton("Open Maps beside", onClick = { com.darksoul.darksride.nav.RideNav.openMaps(context, beside = true) })
+        val showCard by AppPrefs.flagFlow(context, AppPrefs.SHOW_MAPS_CARD).collectAsState()
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Show on the ride screen", fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text("A card with an Open button among your ride cards (move it in Card order).",
+                    fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
+            }
+            Switch(checked = showCard, onCheckedChange = { AppPrefs.setFlag(context, AppPrefs.SHOW_MAPS_CARD, it) })
+        }
         var full by remember { mutableStateOf(AppPrefs.flag(context, AppPrefs.MUSIC_FULL)) }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {

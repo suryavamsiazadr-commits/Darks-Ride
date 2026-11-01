@@ -238,16 +238,16 @@ private fun setupItems(c: Context, mode: AppMode): List<SetupItem> {
             SetupItem(Step.BACKGROUND, "Background running", background),
             SetupItem(Step.NOTIFICATIONS, "Music and messages", PhoneListenerService.hasAccess(c)),
             SetupItem(Step.CALLS, "Calls", CallRelay.hasCallAccess(c)),
-            SetupItem(Step.INTERNET, "Bike internet (Bluetooth tethering)", BikeNet.workedOnce(c)),
-            SetupItem(Step.AUTO_TAP, "Auto-tap helper for tethering", AutoTap.isEnabled(c)),
+            SetupItem(Step.INTERNET, "Bike internet (Bluetooth tethering)", BikeNet.workedOnce(c), optional = true),
+            SetupItem(Step.AUTO_TAP, "Auto-tap helper for tethering", AutoTap.isEnabled(c), optional = true),
             SetupItem(Step.OVERLAY, "Answer WhatsApp calls", RideOverlay.canShow(c), optional = true)
         )
         AppMode.RIDE -> listOf(
             SetupItem(Step.BLUETOOTH, "Bluetooth access", bluetooth),
             SetupItem(Step.BACKGROUND, "Background running", background),
             SetupItem(Step.OVERLAY, "Cards over Google Maps", RideOverlay.canShow(c)),
-            SetupItem(Step.INTERNET, "Internet from your ${RoleNames.MAIN}", BikeNet.workedOnce(c)),
-            SetupItem(Step.AUTO_TAP, "Auto-tap helper for internet", AutoTap.isEnabled(c))
+            SetupItem(Step.INTERNET, "Internet from your ${RoleNames.MAIN}", BikeNet.workedOnce(c), optional = true),
+            SetupItem(Step.AUTO_TAP, "Auto-tap helper for internet", AutoTap.isEnabled(c), optional = true)
         )
     }
 }

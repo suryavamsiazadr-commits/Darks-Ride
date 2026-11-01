@@ -68,6 +68,8 @@ object AppPrefs {
     const val PANEL_AUTO = "panel_auto"
     /** Ride screen: music fills the screen while it plays (beside Maps / small screen). */
     const val MUSIC_FULL = "music_full"
+    /** Ride screen: show the "Side by side with Maps" card. */
+    const val SHOW_MAPS_CARD = "show_maps_card"
 
     private val FLAG_DEFAULTS = mapOf(
         NOTIFY_WHATSAPP to true,
@@ -75,15 +77,23 @@ object AppPrefs {
         NOTIFY_OTHER to false,
         NOTIFY_SHOW_TEXT to true,
         PANEL_AUTO to true,
-        MUSIC_FULL to true
+        MUSIC_FULL to true,
+        SHOW_MAPS_CARD to true
     )
 
     fun flag(c: Context, key: String): Boolean =
         prefs(c).getBoolean(key, FLAG_DEFAULTS[key] ?: false)
 
-    fun setFlag(c: Context, key: String, value: Boolean) = prefs(c).edit {
-        putBoolean(key, value)
+    fun setFlag(c: Context, key: String, value: Boolean) {
+        prefs(c).edit { putBoolean(key, value) }
+        flagFlows[key]?.value = value
     }
+
+    private val flagFlows = mutableMapOf<String, MutableStateFlow<Boolean>>()
+
+    /** A flag as a live value, for switches that change what's on screen right away. */
+    fun flagFlow(c: Context, key: String): StateFlow<Boolean> =
+        flagFlows.getOrPut(key) { MutableStateFlow(flag(c, key)) }.asStateFlow()
 
     // ---- Destination shared while the bike was not connected (main phone) ----
     private const val KEY_PENDING_NAV = "pending_nav"

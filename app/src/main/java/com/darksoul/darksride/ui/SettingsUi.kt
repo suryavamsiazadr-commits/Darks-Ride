@@ -37,6 +37,8 @@ fun SettingsScreen(
             SpotlightCard()
             SmallScreenCard()
         }
+        // Internet over Bluetooth and its auto-tap helper live here, not on the Ride page.
+        InternetCard(mode)
         NavHistoryCard(mode)
         LinkCard(mode)
         AppearanceCard()

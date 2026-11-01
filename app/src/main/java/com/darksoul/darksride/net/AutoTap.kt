@@ -55,10 +55,21 @@ object AutoTap {
     private var scrolled = false
     private var done: ((Boolean) -> Unit)? = null
 
+    /**
+     * Is the helper switched on? Android saves it either in full ("pkg/pkg.net.AutoTapService")
+     * or short (".net.AutoTapService") form, so compare the parsed names, and also ask
+     * Android's list of running accessibility services.
+     */
     fun isEnabled(c: Context): Boolean {
-        val me = ComponentName(c, AutoTapService::class.java).flattenToString()
+        val me = ComponentName(c, AutoTapService::class.java)
         val on = Settings.Secure.getString(c.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: ""
-        return on.split(':').any { it.equals(me, ignoreCase = true) }
+        if (on.split(':').any { ComponentName.unflattenFromString(it.trim()) == me }) return true
+        if (service != null) return true
+        val am = c.getSystemService(android.view.accessibility.AccessibilityManager::class.java) ?: return false
+        return runCatching {
+            am.getEnabledAccessibilityServiceList(android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+                .any { it.resolveInfo?.serviceInfo?.let { si -> si.packageName == me.packageName && si.name == me.className } == true }
+        }.getOrDefault(false)
     }
 
     fun settingsIntent() = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)

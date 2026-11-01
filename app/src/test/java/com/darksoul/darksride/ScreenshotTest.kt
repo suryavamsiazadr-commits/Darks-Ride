@@ -135,6 +135,16 @@ class ScreenshotTest {
         SettingsScreen(mode = AppMode.MAIN, onChangeRole = {})
     }
 
+    // Real landscape heights once status / navigation bars take their share.
+    @Test @Config(qualifiers = "w891dp-h340dp-land-xhdpi")
+    fun wideShortDark() = shoot("wide_short_dark") { music(); route(); RideScreen() }
+
+    @Test @Config(qualifiers = "w891dp-h300dp-land-xhdpi")
+    fun wideShorterSoft() = shoot("wide_shorter_soft", style = UiStyle.SOFT) { pausedMusic(); route(); RideScreen() }
+
+    @Test @Config(qualifiers = "w411dp-h891dp-port-xhdpi")
+    fun ridePortraitPausedSoft() = shoot("ride_portrait_paused_soft", style = UiStyle.SOFT) { pausedMusic(); route(); RideScreen() }
+
     // ---------- Main phone ----------
 
     @Test @Config(qualifiers = "w412dp-h891dp-port-xhdpi")

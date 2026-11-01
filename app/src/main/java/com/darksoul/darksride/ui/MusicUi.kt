@@ -121,8 +121,8 @@ fun MusicPanel(modifier: Modifier = Modifier, onExpand: (() -> Unit)? = null) {
     BoxWithConstraints(modifier = modifier.rideSurface(26.dp, edge = colors.primary.copy(alpha = 0.45f))) {
         val h = maxHeight
         val w = maxWidth
-        val roomy = h >= 300.dp
-        val tight = h < 210.dp
+        val roomy = h >= 290.dp
+        val tight = h < 170.dp
         val artSize = minOf(when { roomy -> 104.dp; tight -> 52.dp; else -> 72.dp }, w * 0.28f)
         val playSize = when { roomy -> 88.dp; tight -> 56.dp; else -> 72.dp }
         val sideSize = when { roomy -> 64.dp; tight -> 48.dp; else -> 56.dp }
@@ -146,9 +146,20 @@ fun MusicPanel(modifier: Modifier = Modifier, onExpand: (() -> Unit)? = null) {
                     TrackSubtitle(n)
                 }
             }
-            if (!tight) WaveProgress(n, Modifier.fillMaxWidth(), showTimes = roomy)
-            Transport(playing, side = sideSize, play = playSize)
-            if (roomy) VolumeRow(n)
+            // Song time is always shown; volume as its own row when there's height,
+            // otherwise as − / + beside the controls (or a slim row on narrow screens).
+            if (!tight) WaveProgress(n, Modifier.fillMaxWidth())
+            when {
+                roomy -> {
+                    Transport(playing, side = sideSize, play = playSize)
+                    VolumeRow(n)
+                }
+                w >= 360.dp -> Transport(playing, side = sideSize, play = playSize, volume = true)
+                else -> {
+                    Transport(playing, side = sideSize, play = playSize)
+                    VolumeRow(n, button = 44.dp)
+                }
+            }
         }
     }
 }
@@ -330,13 +341,23 @@ private fun MiniPlayer(n: NowPlaying?, playing: Boolean, onToggle: () -> Unit) {
 }
 
 @Composable
-private fun Transport(playing: Boolean, side: Dp, play: Dp) {
+private fun Transport(playing: Boolean, side: Dp, play: Dp, volume: Boolean = false) {
     val context = LocalContext.current
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically) {
+        if (volume) {
+            RoundButton(R.drawable.ic_volume_down, "Volume down", side * 0.85f, repeat = true) {
+                RideMedia.nudgeVolume(-1); send(context, "vol_down")
+            }
+        }
         RoundButton(R.drawable.ic_prev, "Previous", side) { send(context, "prev") }
         PlayButton(playing, play) { send(context, "toggle") }
         RoundButton(R.drawable.ic_next, "Next", side) { send(context, "next") }
+        if (volume) {
+            RoundButton(R.drawable.ic_volume_up, "Volume up", side * 0.85f, repeat = true) {
+                RideMedia.nudgeVolume(+1); send(context, "vol_up")
+            }
+        }
     }
 }
 

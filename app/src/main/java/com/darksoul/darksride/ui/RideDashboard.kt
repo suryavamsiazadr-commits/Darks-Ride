@@ -83,11 +83,11 @@ enum class RideCard(val label: String) {
     MUSIC("Music"),
     NAVIGATION("Navigation"),
     MESSAGES("Messages"),
-    INTERNET("Bike internet"),
+    MAPS("Side by side with Maps"),
     RIDE_MODE("Ride mode");
 
     companion object {
-        val DEFAULT = listOf(MUSIC, NAVIGATION, MESSAGES, INTERNET, RIDE_MODE)
+        val DEFAULT = listOf(MUSIC, NAVIGATION, MESSAGES, MAPS, RIDE_MODE)
     }
 }
 
@@ -109,6 +109,7 @@ private fun rideSlots(): List<Slot> {
     val popup by RideNotifications.popup.collectAsState()
     val now by RideMedia.now.collectAsState()
     val order by AppPrefs.cardOrder(context).collectAsState()
+    val showMaps by AppPrefs.flagFlow(context, AppPrefs.SHOW_MAPS_CARD).collectAsState()
     val live = buildList {
         if (popup != null) add(RideCard.MESSAGES)
         if (now?.playing == true) add(RideCard.MUSIC)
@@ -116,7 +117,8 @@ private fun rideSlots(): List<Slot> {
     return buildList {
         if (call != null) add(Slot.Call)
         live.forEach { add(Slot.Card(it, live = true)) }
-        order.filterNot { it in live }.forEach { add(Slot.Card(it, live = false)) }
+        order.filterNot { it in live || (it == RideCard.MAPS && !showMaps) }
+            .forEach { add(Slot.Card(it, live = false)) }
     }
 }
 
@@ -283,7 +285,7 @@ private fun PortraitSlot(slot: Slot) {
             RideCard.MUSIC -> NowPlayingCard(onExpand = LocalExpandMusic.current)
             RideCard.NAVIGATION -> DestinationCard()
             RideCard.MESSAGES -> MessagesCard(spotlight = popup != null)
-            RideCard.INTERNET -> InternetCard(AppMode.RIDE)
+            RideCard.MAPS -> MapsBesideTile()
             RideCard.RIDE_MODE -> RideModeCard(AppMode.RIDE)
         }
     }
@@ -310,7 +312,7 @@ private fun CompactSlot(slot: Slot, height: Dp) {
                     else -> QuietTile("No new messages", Modifier.fillMaxWidth())
                 }
             }
-            RideCard.INTERNET -> InternetCard(AppMode.RIDE)
+            RideCard.MAPS -> MapsBesideTile()
             RideCard.RIDE_MODE -> RideModeCard(AppMode.RIDE)
         }
     }
@@ -332,8 +334,8 @@ private fun LeadSlot(slot: Slot, modifier: Modifier) {
                 if (n != null) MessagePanel(n, spotlight = popup != null, more = if (popup == null) items.size - 1 else 0, modifier = modifier)
                 else QuietTile("No new messages", modifier)
             }
-            RideCard.INTERNET, RideCard.RIDE_MODE -> Column(modifier.verticalScroll(rememberScrollState())) {
-                if (slot.card == RideCard.INTERNET) InternetCard(AppMode.RIDE) else RideModeCard(AppMode.RIDE)
+            RideCard.MAPS, RideCard.RIDE_MODE -> Column(modifier.verticalScroll(rememberScrollState())) {
+                if (slot.card == RideCard.MAPS) MapsBesideTile() else RideModeCard(AppMode.RIDE)
             }
         }
     }
@@ -478,6 +480,26 @@ private fun RoutePanel(modifier: Modifier, slim: Boolean = false) {
             PillButton(if (d != null) "Navigate" else "Open Maps", Go, Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 if (d != null) RideNav.navigate(context, d) else RideNav.openMaps(context)
             }
+        }
+    }
+}
+
+/** Ride screen: one tap to put Google Maps beside Dark's Ride (split screen). */
+@Composable
+private fun MapsBesideTile() {
+    val context = LocalContext.current
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier.fillMaxWidth().rideSurface(24.dp, tint = routeGreen()).padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text("Side by side with Maps", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+            Text("Maps and Dark's Ride together, music full screen", fontSize = 13.sp,
+                color = colors.onSurface.copy(alpha = 0.7f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+        PillButton("Open", routeGreen(), Modifier.padding(start = 10.dp)) {
+            RideNav.openMaps(context, beside = true)
         }
     }
 }
