@@ -1,0 +1,61 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+Calculating task graph as no cached configuration is available for tasks: testDebugUnitTest --tests *ScreenshotTest* --tests *LaunchTest*
+> Task :app:preBuild UP-TO-DATE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugResources
+> Task :app:javaPreCompileDebug
+> Task :app:mapDebugSourceSetPaths
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:processDebugNavigationResources
+> Task :app:checkDebugAarMetadata
+> Task :app:compileDebugNavigationResources
+> Task :app:javaPreCompileDebugUnitTest
+> Task :app:mergeDebugResources
+> Task :app:mergeDebugAssets
+> Task :app:processDebugMainManifest
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugManifest
+> Task :app:mergeDebugUnitTestManifest
+> Task :app:processDebugUnitTestManifest
+> Task :app:generateDebugRFile
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
+
+> Task :app:compileDebugKotlin
+w: file:///home/runner/work/Darks-Ride/Darks-Ride/app/src/main/java/com/darksoul/darksride/net/AutoTap.kt:123:17 'var isChecked: Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Darks-Ride/Darks-Ride/app/src/main/java/com/darksoul/darksride/net/AutoTap.kt:160:25 'var isChecked: Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Darks-Ride/Darks-Ride/app/src/main/java/com/darksoul/darksride/net/AutoTap.kt:161:25 'var isChecked: Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Darks-Ride/Darks-Ride/app/src/main/java/com/darksoul/darksride/net/AutoTap.kt:169:25 'var isChecked: Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Darks-Ride/Darks-Ride/app/src/main/java/com/darksoul/darksride/phone/CallRelay.kt:334:33 'static field MODE_BACKGROUND_ACTIVITY_START_ALLOWED: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Darks-Ride/Darks-Ride/app/src/main/java/com/darksoul/darksride/ui/GarageUi.kt:45:69 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/Darks-Ride/Darks-Ride/app/src/main/java/com/darksoul/darksride/ui/MainShell.kt:31:43 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///home/runner/work/Darks-Ride/Darks-Ride/app/src/main/java/com/darksoul/darksride/ui/Screens.kt:156:13 Condition is always 'true'.
+
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:processDebugJavaRes
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.robolectric.nativeruntime.DefaultNativeRuntimeLoader in an unnamed module
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+> Task :app:testDebugUnitTest
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1793528194181.json
+
+BUILD SUCCESSFUL in 1m 4s
+29 actionable tasks: 29 executed
+Configuration cache entry stored.
