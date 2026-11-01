@@ -7,7 +7,7 @@ A free, personal Android app that turns a spare phone on your motorcycle into a 
 
 Built and ridden on a Samsung Galaxy S25 Ultra (Pocket Sherpa) and an LG Wing (Handlebar HQ) on a Royal Enfield Himalayan 450. Works with any two Android 12+ phones.
 
-> Latest release: **v1.0** — see the [Releases](../../releases) page.
+> Latest release: **v1.0.2** — see the [Releases](../../releases) page.
 > What changed and when: [docs/CHANGELOG.md](docs/CHANGELOG.md) · How it works inside: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Building and releasing: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
 ---
@@ -57,9 +57,11 @@ Updating: install the new APK over the old one; your settings stay.
 
 Each phone has a **Setup** checklist (Settings, and on the Ride page while something is missing). Tap any step without a tick and it explains what to allow and opens the right Android screen.
 
-**Pocket Sherpa:** Bluetooth access · pick the bike phone · background running · music and messages (notification access) · calls · bike internet (Bluetooth tethering) · auto-tap helper · optional: answer WhatsApp calls.
+**Pocket Sherpa:** Bluetooth access · pick the bike phone · background running · music and messages (notification access) · calls · optional: answer WhatsApp calls, bike internet, auto-tap helper.
 
-**Handlebar HQ:** Bluetooth access · background running · cards over Google Maps · internet from your Pocket Sherpa · auto-tap helper.
+**Handlebar HQ:** Bluetooth access · background running · cards over Google Maps · optional: internet from your Pocket Sherpa, auto-tap helper.
+
+Bike internet and the auto-tap helper are set up from **Settings → Bike internet** on each phone.
 
 **Greyed-out switch ("Restricted setting")** for notification access, display over other apps or the auto-tap helper: App info → ⋮ → **Allow restricted settings**, then try again. This happens because the app is installed from a file, not the Play Store.
 

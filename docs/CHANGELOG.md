@@ -2,6 +2,13 @@
 
 How Dark's Ride grew, step by step. Dates are when the change landed on `main`.
 
+## v1.0.2 — 2026-11-01
+
+- **Bike internet and the auto-tap helper now live in Settings** on both phones. They're optional checklist steps, so the Setup card no longer stays on the home page because of them.
+- **Fixed:** the auto-tap helper step stayed unticked even after turning it on (Android saves the helper's name in a short form the app didn't recognise).
+- **Landscape music:** the song time and the volume − / + are back on shorter landscape screens.
+- **Side by side with Maps** is back on the ride screen as a card with an **Open** button; move it in Card order, or hide it with **Show on the ride screen** in Settings → Side by side with Maps.
+
 ## v1.0.1 — 2026-11-01
 
 - **Fixed:** the v1.0 APK crashed as soon as it opened. The release build's code optimiser (R8 library optimisation) broke some of Kotlin's built-in classes; it's now off. The release build is still the fast, non-debug build.
