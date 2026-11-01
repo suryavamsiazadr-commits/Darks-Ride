@@ -175,8 +175,8 @@ fun LinkScreen(
                 SetupCard(mode, hideWhenComplete = true)
 
                 if (mode == AppMode.RIDE) {
-                    if (status == LinkStatus.CONNECTED) RideContent()
-                    else if (rideOn) Body("Waiting for your Pocket Sherpa…", dim = true)
+                    // Linked: the ride dashboard takes over (above).
+                    if (rideOn) Body("Waiting for your Pocket Sherpa…", dim = true)
                 } else {
                     if (rideOn && status == LinkStatus.STOPPED) {
                         BigButton("Start link", onClick = { LinkService.turnOn(context) })

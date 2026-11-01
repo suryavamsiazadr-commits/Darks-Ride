@@ -61,34 +61,6 @@ import com.darksoul.darksride.ui.theme.Go
 import com.darksoul.darksride.ui.theme.Stop
 import kotlinx.coroutines.delay
 
-/**
- * The ride screen's cards, in order of what matters right now:
- *  1. a call, from the first ring until it ends,
- *  2. a new message, for the spotlight time set in Settings (5–60 s, default 10),
- *  3. music (always first otherwise), then navigation, then older messages.
- */
-@Composable
-fun RideContent() {
-    val context = LocalContext.current
-    val call by RideCall.call.collectAsState()
-    val popup by RideNotifications.popup.collectAsState()
-    val fresh = popup
-    LaunchedEffect(fresh?.id, fresh?.text) {
-        if (fresh == null) return@LaunchedEffect
-        delay(AppPrefs.spotlightSeconds(context) * 1_000L)
-        RideNotifications.dismissPopup(fresh.id)
-    }
-    val spotlight = fresh != null
-
-    AnimatedVisibility(visible = call != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-        call?.let { CallCard(it) }
-    }
-    if (spotlight) MessagesCard(spotlight = true)
-    NowPlayingCard()
-    DestinationCard()
-    if (!spotlight) MessagesCard()
-}
-
 @Composable
 internal fun CallCard(call: CallInfo) {
     val context = LocalContext.current

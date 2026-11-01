@@ -42,38 +42,6 @@ private fun clock(time: Long): String = SimpleDateFormat("HH:mm", Locale.getDefa
 
 // ---------- Ride screen ----------
 
-/** Big pop-up for a new message; disappears after 8 seconds or when tapped. */
-@Composable
-fun MessagePopup() {
-    val popup by RideNotifications.popup.collectAsState()
-    val p = popup ?: return
-
-    LaunchedEffect(p.id, p.text) {
-        delay(8_000)
-        RideNotifications.dismissPopup(p.id)
-    }
-
-    val colors = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(20.dp)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(colors.primary.copy(alpha = 0.16f))
-            .border(2.dp, colors.primary, shape)
-            .clickable { RideNotifications.dismissPopup(p.id) }
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text("${p.app} · ${clock(p.time)}", fontSize = 15.sp, color = colors.primary,
-            fontWeight = FontWeight.SemiBold)
-        Text(p.title, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = colors.onSurface,
-            maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(p.text, fontSize = 20.sp, color = colors.onSurface,
-            maxLines = 3, overflow = TextOverflow.Ellipsis)
-    }
-}
-
 /**
  * Recent messages from the main phone. Tap one to dismiss it, or Clear for all:
  * both also clear the notification on the main phone.

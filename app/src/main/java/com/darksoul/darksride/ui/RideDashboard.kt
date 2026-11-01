@@ -507,10 +507,3 @@ private fun PillButton(label: String, color: Color, modifier: Modifier = Modifie
         Text(label, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
     }
 }
-
-/** True while the ride screen should be the dashboard (linked, on the bike phone). */
-@Composable
-fun rideDashboardActive(): Boolean {
-    val status by LinkState.status.collectAsState()
-    return status == LinkStatus.CONNECTED
-}
