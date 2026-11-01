@@ -113,3 +113,48 @@ jobs:
           git config user.email "screens-bot@users.noreply.github.com"
           git add -A && git commit -q -m "Screens for ${GITHUB_SHA::7}"
           git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" screens
+
+  # Runs the real release APK on emulators (Android 13 like the LG Wing, and Android 15),
+  # opens it as each phone, and publishes screenshots and any crash log to the "emulator" branch.
+  emulator:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [33, 35]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Build release APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          OUT: /tmp/emu
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: bash .github/scripts/emulator-check.sh
+      - name: Publish to the "emulator-<api>" branch
+        if: always()
+        run: |
+          mkdir -p /tmp/emu && cd /tmp/emu
+          git init -q -b emulator-${{ matrix.api }}
+          git config user.name "emulator-bot"
+          git config user.email "emulator-bot@users.noreply.github.com"
+          git add -A && git commit -q -m "Emulator run for ${GITHUB_SHA::7}" || exit 0
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" emulator-${{ matrix.api }}
