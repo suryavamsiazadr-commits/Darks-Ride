@@ -15,6 +15,7 @@ import com.darksoul.darksride.link.LinkService
 import com.darksoul.darksride.link.LinkState
 import com.darksoul.darksride.panel.RideMainHandle
 import com.darksoul.darksride.phone.PhoneListenerService
+import com.darksoul.darksride.ui.CrashReportScreen
 import com.darksoul.darksride.ui.LinkScreen
 import com.darksoul.darksride.ui.MainShell
 import com.darksoul.darksride.ui.ModeChoiceScreen
@@ -55,7 +56,17 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         setContent {
             DarksRideTheme {
-                AppRoot()
+                // After a crash: show what happened first (copy / share), then the app.
+                var crash by remember { mutableStateOf(CrashCatcher.lastCrash(this)) }
+                val report = crash
+                if (report != null) {
+                    CrashReportScreen(report, onContinue = {
+                        CrashCatcher.clear(this)
+                        crash = null
+                    })
+                } else {
+                    AppRoot()
+                }
             }
         }
     }

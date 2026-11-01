@@ -9,6 +9,7 @@ import com.darksoul.darksride.phone.RideCall
 class DarksRideApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        CrashCatcher.install(this)
         LinkState.init(this)
         com.darksoul.darksride.ui.theme.ThemeController.init(this)
         com.darksoul.darksride.net.BikeNet.watch(this)

@@ -95,7 +95,7 @@ jobs:
       - name: Render screens
         run: |
           chmod +x gradlew
-          ./gradlew testDebugUnitTest --tests '*ScreenshotTest*' --stacktrace 2>&1 | tee screens.log
+          ./gradlew testDebugUnitTest --tests '*ScreenshotTest*' --tests '*LaunchTest*' --stacktrace 2>&1 | tee screens.log
       - name: Show test errors
         if: failure()
         run: |
