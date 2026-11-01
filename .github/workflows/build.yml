@@ -55,6 +55,31 @@ jobs:
           files: DarksRide-*.apk
           generate_release_notes: true
 
+      # A commit on main whose message contains [release] publishes a GitHub Release
+      # named after the app's versionName (e.g. v1.0), with the APKs attached.
+      - name: Read app version
+        id: ver
+        if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]')
+        run: |
+          v=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "tag=v$v" >> "$GITHUB_OUTPUT"
+          cp app/build/outputs/apk/release/app-release.apk "DarksRide-v$v.apk"
+      - name: Publish release from main
+        if: steps.ver.outputs.tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Dark's Ride ${{ steps.ver.outputs.tag }}
+          files: DarksRide-v*.apk
+          body: |
+            Dark's Ride ${{ steps.ver.outputs.tag }}: companion app linking your main phone (Pocket Sherpa) to the bike phone (Handlebar HQ).
+
+            Install `DarksRide-${{ steps.ver.outputs.tag }}.apk` on both phones, open it, and pick each phone's role.
+            Highlights: music, calls and messages on the bike; Send to bike from Google Maps; automatic Bluetooth tethering;
+            split screen beside Maps with full-screen music; Glass and Soft styles with 4 ride colours; Garage and encrypted Documents.
+          generate_release_notes: true
+
   # Renders the main screens (portrait, landscape, small screen, split screen; dark and light)
   # to PNGs with Robolectric, to check the layout without a phone. Doesn't block the APK.
   screens:
