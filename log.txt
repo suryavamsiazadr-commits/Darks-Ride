@@ -1,0 +1,142 @@
+11-01 10:19:31.993   424   430 V installd: DexInv: --- END '/data/app/~~Kw8-4pRDi-tfs7pU_igBKg==/com.darksoul.darksride-vci3tsApKYTWYWf9ZRzwVg==/base.apk' (success) ---
+11-01 10:19:32.031   497   555 V BackupManagerService: [UserID:0] restoreAtInstall pkg=com.darksoul.darksride token=1 restoreSet=0
+11-01 10:19:32.772  1447  1447 I MediaProvider: Invalidating LocalCallingIdentity cache for package com.darksoul.darksride. Reason: package android.intent.action.PACKAGE_ADDED
+11-01 10:19:32.773  1490  1490 I GsaVoiceInteractionSrv: O received Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.darksoul.darksride flg=0x4000010 (has extras) }
+11-01 10:19:32.791   693   693 D AvrcpMediaPlayerList: Name of package changed: com.darksoul.darksride
+11-01 10:19:32.931   497  1924 I ActivityManager: Force stopping com.darksoul.darksride appid=10167 user=0: clear data
+11-01 10:19:32.947   497   538 I ActivityManager: Force stopping com.darksoul.darksride appid=10167 user=-1: clearApplicationUserData
+11-01 10:19:33.133   497   773 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=com.darksoul.darksride/.MainActivity} from uid 2000
+11-01 10:19:33.207   497   539 I ActivityManager: Start proc 5302:com.darksoul.darksride/u0a167 for pre-top-activity {com.darksoul.darksride/com.darksoul.darksride.MainActivity}
+11-01 10:19:33.256  1131  1131 I GeofencerStateMachine: removeGeofences: removeRequest=RemoveGeofencingRequest[REMOVE_ALL packageName=com.darksoul.darksride]
+11-01 10:19:33.371  5302  5302 I TetheringManager: registerTetheringEventCallback:com.darksoul.darksride
+11-01 10:19:35.961  1680  5154 I ChromeSync: [Sync,SyncIntentOperation] Handling the intent: Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.darksoul.darksride flg=0x4000010 cmp=com.google.android.gms/.chimera.GmsIntentOperationService (has extras) }.
+11-01 10:19:35.977  1680  5154 I ChromeSync: [Persistence,AffiliationManager] One of affiliation or grouping data for android://PBv4mxkIey3SYaq7FWQoR6pghJz2JLMkSlVSEwTiLqDKJ_acJPSOnThrMeKh-rZ_33NKexzwUelmQd0GjciWRA==@com.darksoul.darksride/ was not found. Marking affiliation data as stale...
+11-01 10:19:36.010   497   537 D ArtManagerInternalImpl: /data/misc/iorapd/com.darksoul.darksride/7/com.darksoul.darksride.MainActivity/compiled_traces/compiled_trace.pb doesn't exist
+11-01 10:19:36.017   497   537 I ActivityTaskManager: Displayed com.darksoul.darksride/.MainActivity: +1s660ms
+11-01 10:19:36.027  1131  5162 W GCM     : Unexpected forwarded intent: Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.darksoul.darksride flg=0x4000010 cmp=com.google.android.gms/.chimera.PersistentIntentOperationService (has extras) }
+11-01 10:19:36.028  1131  4361 W GCM     : Unexpected forwarded intent: Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.darksoul.darksride flg=0x4000010 cmp=com.google.android.gms/.chimera.PersistentIntentOperationService (has extras) }
+11-01 10:19:36.621   497  1924 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.darksoul.darksride flg=0x4000010 (has extras) } to com.google.android.packageinstaller/com.android.packageinstaller.PackageInstalledReceiver
+11-01 10:19:36.621   497   538 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.darksoul.darksride flg=0x4000010 (has extras) } to com.google.android.gms/.games.chimera.GamesSystemBroadcastReceiverProxy
+11-01 10:19:36.621   497   538 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.darksoul.darksride flg=0x4000010 (has extras) } to com.google.android.gms/.gass.chimera.PackageChangeBroadcastReceiver
+11-01 10:19:36.621   497   538 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.darksoul.darksride flg=0x4000010 (has extras) } to com.google.android.gms/.chimera.GmsIntentOperationService$PersistentTrustedReceiver
+11-01 10:19:36.621   497   538 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.darksoul.darksride flg=0x4000010 (has extras) } to com.google.android.googlequicksearchbox/com.google.android.apps.gsa.googlequicksearchbox.GelStubAppWatcher
+11-01 10:19:36.621   497   538 W BroadcastQueue: Background execution not allowed: receiving Intent { act=android.intent.action.PACKAGE_ADDED dat=package:com.darksoul.darksride flg=0x4000010 (has extras) } to com.google.android.ims/.receivers.RcsAutoStartReceiver
+11-01 10:19:36.960  1680  2717 I Icing   : doRemovePackageData com.darksoul.darksride [CONTEXT service_id=21 ]
+11-01 10:19:38.392  5302  5485 D ProfileInstaller: Installing profile for com.darksoul.darksride
+11-01 10:19:38.656  1447  3288 I MediaProvider: Begin Intent { act=android.intent.action.PACKAGE_DATA_CLEARED dat=package:com.darksoul.darksride flg=0x1000010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService (has extras) }
+11-01 10:19:38.658  1447  3288 I MediaProvider: End Intent { act=android.intent.action.PACKAGE_DATA_CLEARED dat=package:com.darksoul.darksride flg=0x1000010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService (has extras) }
+11-01 10:19:41.240  5491  5491 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:19:41.250  5491  5491 I AndroidRuntime: Using default boot image
+11-01 10:19:41.250  5491  5491 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:19:41.397  5491  5491 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-01 10:19:42.464  5491  5491 D AndroidRuntime: Shutting down VM
+11-01 10:19:42.991  5509  5509 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:19:42.992  5509  5509 I AndroidRuntime: Using default boot image
+11-01 10:19:42.992  5509  5509 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:19:43.044  5509  5509 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-01 10:19:43.062  5509  5509 D AndroidRuntime: Shutting down VM
+11-01 10:19:43.410   497   497 D NotificationService: 0|com.darksoul.darksride|1|null|10167: granting content://settings/system/notification_sound
+11-01 10:19:43.411   497   497 D NotificationService: 0|com.darksoul.darksride|1|null|10167: granting content://settings/system/notification_sound
+11-01 10:19:48.574   497  1603 I ActivityManager: Force stopping com.darksoul.darksride appid=10167 user=0: from pid 5565
+11-01 10:19:48.574   497  1603 I ActivityManager: Killing 5302:com.darksoul.darksride/u0a167 (adj 0): stop com.darksoul.darksride due to from pid 5565
+11-01 10:19:48.578   497  1603 W ActivityTaskManager: Force removing ActivityRecord{30e8128 u0 com.darksoul.darksride/.MainActivity t9 f}}: app died, no saved state
+11-01 10:19:48.582   497   593 W InputDispatcher: channel '5116cff com.darksoul.darksride/com.darksoul.darksride.MainActivity (server)' ~ Consumer closed input channel or an error occurred.  events=0x9
+11-01 10:19:48.582   497   593 E InputDispatcher: channel '5116cff com.darksoul.darksride/com.darksoul.darksride.MainActivity (server)' ~ Channel is unrecoverably broken and will be disposed!
+11-01 10:19:48.582   497  1907 D ConnectivityService: ConnectivityService NetworkRequestInfo binderDied(NetworkRequest [ LISTEN id=38, [ Transports: BLUETOOTH Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&FOREGROUND Uid: 10167 AdministratorUids: [] RequestorUid: 10167 RequestorPackageName: com.darksoul.darksride] ], android.os.BinderProxy@15d6923)
+11-01 10:19:48.583   497  1860 D ConnectivityService: ConnectivityService NetworkRequestInfo binderDied(NetworkRequest [ LISTEN id=39, [ Transports: WIFI Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&FOREGROUND Uid: 10167 AdministratorUids: [] RequestorUid: 10167 RequestorPackageName: com.darksoul.darksride] ], android.os.BinderProxy@ee09e20)
+11-01 10:19:48.592   497  1603 W InputDispatcher: Attempted to unregister already unregistered input channel '5116cff com.darksoul.darksride/com.darksoul.darksride.MainActivity (server)'
+11-01 10:19:48.663   497  1860 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=com.darksoul.darksride/.MainActivity} from uid 2000
+11-01 10:19:48.698   497   539 I ActivityManager: Start proc 5578:com.darksoul.darksride/u0a167 for pre-top-activity {com.darksoul.darksride/com.darksoul.darksride.MainActivity}
+11-01 10:19:48.775  5578  5578 I TetheringManager: registerTetheringEventCallback:com.darksoul.darksride
+11-01 10:19:49.943   497   537 D ArtManagerInternalImpl: /data/misc/iorapd/com.darksoul.darksride/7/com.darksoul.darksride.MainActivity/compiled_traces/compiled_trace.pb doesn't exist
+11-01 10:19:49.946   497   537 I ActivityTaskManager: Displayed com.darksoul.darksride/.MainActivity: +1s277ms
+11-01 10:19:50.152   497   497 D NotificationService: 0|com.darksoul.darksride|1|null|10167: granting content://settings/system/notification_sound
+11-01 10:19:50.152   497   497 D NotificationService: 0|com.darksoul.darksride|1|null|10167: granting content://settings/system/notification_sound
+11-01 10:19:53.978  5578  5682 D ProfileInstaller: Skipping profile installation for com.darksoul.darksride
+11-01 10:19:56.078  5688  5688 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:19:56.079  5688  5688 I AndroidRuntime: Using default boot image
+11-01 10:19:56.079  5688  5688 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:19:56.141  5688  5688 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-01 10:19:57.165  5688  5688 D AndroidRuntime: Shutting down VM
+11-01 10:20:02.753   497   776 I ActivityManager: Force stopping com.darksoul.darksride appid=10167 user=0: clear data
+11-01 10:20:02.753   497   776 I ActivityManager: Killing 5578:com.darksoul.darksride/u0a167 (adj 0): stop com.darksoul.darksride due to clear data
+11-01 10:20:02.760   497   776 W ActivityTaskManager: Force removing ActivityRecord{7e4d6fe u0 com.darksoul.darksride/.MainActivity t10 f}}: app died, no saved state
+11-01 10:20:02.761   497   593 W InputDispatcher: channel 'ee3066e com.darksoul.darksride/com.darksoul.darksride.MainActivity (server)' ~ Consumer closed input channel or an error occurred.  events=0x9
+11-01 10:20:02.761   497   593 E InputDispatcher: channel 'ee3066e com.darksoul.darksride/com.darksoul.darksride.MainActivity (server)' ~ Channel is unrecoverably broken and will be disposed!
+11-01 10:20:02.761   497  1858 D ConnectivityService: ConnectivityService NetworkRequestInfo binderDied(NetworkRequest [ LISTEN id=40, [ Transports: BLUETOOTH Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&FOREGROUND Uid: 10167 AdministratorUids: [] RequestorUid: 10167 RequestorPackageName: com.darksoul.darksride] ], android.os.BinderProxy@60f7dd5)
+11-01 10:20:02.761   497  1858 D ConnectivityService: ConnectivityService NetworkRequestInfo binderDied(NetworkRequest [ LISTEN id=41, [ Transports: WIFI Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&FOREGROUND Uid: 10167 AdministratorUids: [] RequestorUid: 10167 RequestorPackageName: com.darksoul.darksride] ], android.os.BinderProxy@4ada9ea)
+11-01 10:20:02.770   497   776 W InputDispatcher: Attempted to unregister already unregistered input channel 'ee3066e com.darksoul.darksride/com.darksoul.darksride.MainActivity (server)'
+11-01 10:20:02.776   497   538 I ActivityManager: Force stopping com.darksoul.darksride appid=10167 user=-1: clearApplicationUserData
+11-01 10:20:02.799  1131  1131 I GeofencerStateMachine: removeGeofences: removeRequest=RemoveGeofencingRequest[REMOVE_ALL packageName=com.darksoul.darksride]
+11-01 10:20:02.845  1447  3288 I MediaProvider: Begin Intent { act=android.intent.action.PACKAGE_DATA_CLEARED dat=package:com.darksoul.darksride flg=0x1000010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService (has extras) }
+11-01 10:20:02.847  1447  3288 I MediaProvider: End Intent { act=android.intent.action.PACKAGE_DATA_CLEARED dat=package:com.darksoul.darksride flg=0x1000010 cmp=com.google.android.providers.media.module/com.android.providers.media.MediaService (has extras) }
+11-01 10:20:02.852  1680  2666 I Icing   : doRemovePackageData com.darksoul.darksride [CONTEXT service_id=21 ]
+11-01 10:20:02.864   497  1858 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=com.darksoul.darksride/.MainActivity} from uid 2000
+11-01 10:20:02.923   497   539 I ActivityManager: Start proc 5767:com.darksoul.darksride/u0a167 for pre-top-activity {com.darksoul.darksride/com.darksoul.darksride.MainActivity}
+11-01 10:20:02.979  5767  5767 I TetheringManager: registerTetheringEventCallback:com.darksoul.darksride
+11-01 10:20:03.825   497   537 D ArtManagerInternalImpl: /data/misc/iorapd/com.darksoul.darksride/7/com.darksoul.darksride.MainActivity/compiled_traces/compiled_trace.pb doesn't exist
+11-01 10:20:03.826   497   537 I ActivityTaskManager: Displayed com.darksoul.darksride/.MainActivity: +960ms
+11-01 10:20:07.871   426  5762 I iorapd  : Perfetto TraceBuffer saved to file: /data/misc/iorapd/com.darksoul.darksride/7/com.darksoul.darksride.MainActivity/raw_traces/1793528407871373263.perfetto_trace.pb
+11-01 10:20:07.872  5924  5924 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:20:07.874  5924  5924 I AndroidRuntime: Using default boot image
+11-01 10:20:07.874  5924  5924 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:20:07.943  5924  5924 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-01 10:20:08.642  5767  5941 D ProfileInstaller: Installing profile for com.darksoul.darksride
+11-01 10:20:08.983  5924  5924 D AndroidRuntime: Shutting down VM
+11-01 10:20:09.464  5944  5944 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:20:09.465  5944  5944 I AndroidRuntime: Using default boot image
+11-01 10:20:09.465  5944  5944 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:20:09.513  5944  5944 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-01 10:20:09.521  5944  5944 D AndroidRuntime: Shutting down VM
+11-01 10:20:15.051   497  3130 I ActivityManager: Force stopping com.darksoul.darksride appid=10167 user=0: from pid 5969
+11-01 10:20:15.051   497  3130 I ActivityManager: Killing 5767:com.darksoul.darksride/u0a167 (adj 0): stop com.darksoul.darksride due to from pid 5969
+11-01 10:20:15.052   497  3130 W ActivityTaskManager: Force removing ActivityRecord{850e952 u0 com.darksoul.darksride/.MainActivity t11 f}}: app died, no saved state
+11-01 10:20:15.065   497   773 D ConnectivityService: ConnectivityService NetworkRequestInfo binderDied(NetworkRequest [ LISTEN id=42, [ Transports: BLUETOOTH Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&FOREGROUND Uid: 10167 AdministratorUids: [] RequestorUid: 10167 RequestorPackageName: com.darksoul.darksride] ], android.os.BinderProxy@79e6baa)
+11-01 10:20:15.065   497   773 D ConnectivityService: ConnectivityService NetworkRequestInfo binderDied(NetworkRequest [ LISTEN id=43, [ Transports: WIFI Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&FOREGROUND Uid: 10167 AdministratorUids: [] RequestorUid: 10167 RequestorPackageName: com.darksoul.darksride] ], android.os.BinderProxy@2bdd39b)
+11-01 10:20:15.118   497   636 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=com.darksoul.darksride/.MainActivity} from uid 2000
+11-01 10:20:15.133   497   539 I ActivityManager: Start proc 5978:com.darksoul.darksride/u0a167 for pre-top-activity {com.darksoul.darksride/com.darksoul.darksride.MainActivity}
+11-01 10:20:15.197  5978  5978 I TetheringManager: registerTetheringEventCallback:com.darksoul.darksride
+11-01 10:20:15.956   497   537 D ArtManagerInternalImpl: /data/misc/iorapd/com.darksoul.darksride/7/com.darksoul.darksride.MainActivity/compiled_traces/compiled_trace.pb doesn't exist
+11-01 10:20:15.956   497   537 I ActivityTaskManager: Displayed com.darksoul.darksride/.MainActivity: +831ms
+11-01 10:20:20.143   426  5984 I iorapd  : Perfetto TraceBuffer saved to file: /data/misc/iorapd/com.darksoul.darksride/7/com.darksoul.darksride.MainActivity/raw_traces/1793528420142878639.perfetto_trace.pb
+11-01 10:20:21.100  5978  6068 D ProfileInstaller: Skipping profile installation for com.darksoul.darksride
+11-01 10:20:22.106  6073  6073 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:20:22.107  6073  6073 I AndroidRuntime: Using default boot image
+11-01 10:20:22.107  6073  6073 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:20:22.159  6073  6073 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-01 10:20:23.195  6073  6073 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@875a; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(95, 564 - 143, 612); packageName: com.darksoul.darksride; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+11-01 10:20:23.195  6073  6073 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@8871; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(177, 564 - 225, 608); packageName: com.darksoul.darksride; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+11-01 10:20:23.195  6073  6073 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@8988; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(259, 564 - 307, 608); packageName: com.darksoul.darksride; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+11-01 10:20:23.199  6073  6073 D AndroidRuntime: Shutting down VM
+11-01 10:20:23.683  6089  6089 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:20:23.685  6089  6089 I AndroidRuntime: Using default boot image
+11-01 10:20:23.685  6089  6089 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:20:23.743  6089  6089 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-01 10:20:23.749  6089  6089 D AndroidRuntime: Shutting down VM
+11-01 10:20:27.292  6108  6108 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:20:27.293  6108  6108 I AndroidRuntime: Using default boot image
+11-01 10:20:27.293  6108  6108 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:20:27.341  6108  6108 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-01 10:20:28.369  6108  6108 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@8648; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(13, 564 - 61, 612); packageName: com.darksoul.darksride; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+11-01 10:20:28.375  6108  6108 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@8876; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(177, 564 - 225, 608); packageName: com.darksoul.darksride; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+11-01 10:20:28.380  6108  6108 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@898d; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(259, 564 - 307, 608); packageName: com.darksoul.darksride; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+11-01 10:20:28.385  6108  6108 D AndroidRuntime: Shutting down VM
+11-01 10:20:28.874  6205  6205 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:20:28.875  6205  6205 I AndroidRuntime: Using default boot image
+11-01 10:20:28.875  6205  6205 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:20:28.929  6205  6205 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-01 10:20:28.935  6205  6205 D AndroidRuntime: Shutting down VM
+11-01 10:20:28.937   497   773 D BiometricService: Package: com.darksoul.darksride Authenticator ID: 0 Modality: 2 Reported Modality: 2 Status: 6
+11-01 10:20:32.504  6262  6262 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:20:32.512  6262  6262 I AndroidRuntime: Using default boot image
+11-01 10:20:32.512  6262  6262 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:20:32.568  6262  6262 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-01 10:20:33.594  6262  6262 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@864f; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(13, 564 - 61, 612); packageName: com.darksoul.darksride; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+11-01 10:20:33.594  6262  6262 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@8766; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(95, 564 - 143, 612); packageName: com.darksoul.darksride; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+11-01 10:20:33.596  6262  6262 I AccessibilityNodeInfoDumper: Skipping invisible child: android.view.accessibility.AccessibilityNodeInfo@8994; boundsInParent: Rect(0, 0 - 0, 0); boundsInScreen: Rect(259, 564 - 307, 608); packageName: com.darksoul.darksride; className: android.view.View; text: null; error: null; maxTextLength: -1; stateDescription: null; contentDescription: null; tooltipText: null; viewIdResName: null; checkable: false; checked: false; focusable: false; focused: false; selected: false; clickable: false; longClickable: false; contextClickable: false; enabled: true; password: false; scrollable: false; importantForAccessibility: false; visible: false; actions: [AccessibilityAction: ACTION_ACCESSIBILITY_FOCUS - null]
+11-01 10:20:33.603  6262  6262 D AndroidRuntime: Shutting down VM
+11-01 10:20:34.084  6278  6278 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-01 10:20:34.085  6278  6278 I AndroidRuntime: Using default boot image
+11-01 10:20:34.085  6278  6278 I AndroidRuntime: Leaving lock profiling enabled
+11-01 10:20:34.133  6278  6278 D AndroidRuntime: Calling main entry com.android.commands.input.Input
+11-01 10:20:34.137  6278  6278 D AndroidRuntime: Shutting down VM
