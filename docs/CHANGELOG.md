@@ -2,6 +2,12 @@
 
 How Dark's Ride grew, step by step. Dates are when the change landed on `main`.
 
+## v1.0.1 — 2026-11-01
+
+- **Fixed:** the v1.0 APK crashed as soon as it opened. The release build's code optimiser (R8 library optimisation) broke some of Kotlin's built-in classes; it's now off. The release build is still the fast, non-debug build.
+- **New:** if the app ever crashes, the next time it opens it shows what went wrong, with **Copy** and **Share** buttons, so it can be fixed without a cable.
+- **New (for development):** every build now opens the real release APK on Android 13 and Android 15 emulators, as both phones, and checks for crashes before a release.
+
 ## v1.0 — 2026-11-01
 
 First release. Everything below is in it.
